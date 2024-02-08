@@ -1,37 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 
-	"github.com/joho/godotenv"
-	"main.go/internal/controller"
-	router "main.go/internal/delivery/http"
-	"main.go/internal/repository"
-	"main.go/internal/service"
-)
-
-var (
-	masterRepository repository.MasterRepository = repository.NewFirestoreRepository()
-	masterService    service.MasterService       = service.NewMasterService(masterRepository)
-	masterController controller.MasterController = controller.NewMasterController(masterService)
-	httpRouter       router.Router               = router.NewChiRouter()
+	"main.go/internal/server"
 )
 
 func main() {
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	srv := server.NewServer()
+	if err := srv.Run("8000"); err != nil {
+		log.Fatalf("error occured while running http server: %s", err.Error())
 	}
-
-	const PORT string = ":8000"
-	httpRouter.GET("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Up and running...")
-	})
-
-	httpRouter.GET("/masters", masterController.GetMasters)
-	httpRouter.POST("/masters", masterController.PostMaster)
-
-	httpRouter.SERVE(PORT)
 }
