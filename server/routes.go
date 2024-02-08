@@ -10,7 +10,7 @@ import (
 	"main.go/repository"
 )
 
-var repo repository.MasterRepository = repository.NewMasterRepository()
+var repo repository.MasterRepository = repository.NewFirestoreRepository()
 
 func getMasterss(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")

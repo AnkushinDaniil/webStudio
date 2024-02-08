@@ -9,14 +9,9 @@ import (
 	"main.go/entity"
 )
 
-type MasterRepository interface {
-	Save(master *entity.Master) (*entity.Master, error)
-	FindAll() ([]entity.Master, error)
-}
-
 type repo struct{}
 
-func NewMasterRepository() MasterRepository {
+func NewFirestoreRepository() MasterRepository {
 	return &repo{}
 }
 
