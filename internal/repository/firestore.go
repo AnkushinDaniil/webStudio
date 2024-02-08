@@ -6,7 +6,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/iterator"
-	"main.go/entity"
+	"main.go/internal/entity"
 )
 
 type repo struct{}
