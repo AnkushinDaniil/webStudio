@@ -1,8 +1,13 @@
 package service
 
-import "main.go/internal/repository"
+import (
+	"main.go/internal/entity"
+	"main.go/internal/repository"
+)
 
-type Authorization interface{}
+type Authorization interface {
+	CreateUser(user entity.User) (int, error)
+}
 
 type TimeslotList interface{}
 
@@ -15,5 +20,7 @@ type Service struct {
 }
 
 func NewService(repo *repository.Repository) *Service {
-	return &Service{}
+	return &Service{
+		Authorization: NewAuthService(repo.Authorization),
+	}
 }
