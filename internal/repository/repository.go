@@ -10,7 +10,9 @@ type Authorization interface {
 	GetUser(username, password string) (entity.User, error)
 }
 
-type TimeslotList interface{}
+type TimeslotList interface {
+	Create(id int, list entity.TimeslotList) (int, error)
+}
 
 type TimeslotItem interface{}
 
@@ -23,5 +25,6 @@ type Repository struct {
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
+		TimeslotList:  NewTimeslotListPostgres(db),
 	}
 }

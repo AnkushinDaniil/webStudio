@@ -1,9 +1,9 @@
 package entity
 
-type Timeslot struct {
-	Id         int    `json:"-"`
-	Owner      string `json:"name"`
-	Timestamps [2]int `json:"timestamps"`
+type TimeslotList struct {
+	Id          int    `json:"id"          db:"id"`
+	Title       string `json:"title"       db:"title"       binding:"required"`
+	Description string `json:"description" db:"description"`
 }
 
 type UsersList struct {
@@ -18,6 +18,7 @@ type TimeslotItem struct {
 	Description string `json:"description"`
 	Start       int    `json:"start"`
 	End         int    `json:"end"`
+	Done        bool   `json:"done"        db:"done"`
 }
 
 type ListsItem struct {

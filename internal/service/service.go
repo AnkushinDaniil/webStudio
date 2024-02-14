@@ -8,9 +8,12 @@ import (
 type Authorization interface {
 	CreateUser(user entity.User) (int, error)
 	GenerateToken(username, password string) (string, error)
+	ParseToken(token string) (int, error)
 }
 
-type TimeslotList interface{}
+type TimeslotList interface {
+	Create(userId int, list entity.TimeslotList) (int, error)
+}
 
 type TimeslotItem interface{}
 
@@ -23,5 +26,6 @@ type Service struct {
 func NewService(repo *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repo.Authorization),
+		TimeslotList:  NewTimeslotListService(repo.TimeslotList),
 	}
 }

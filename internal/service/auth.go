@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -41,11 +42,34 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{jwt.RegisteredClaims{
-		ExpiresAt: &jwt.NumericDate{time.Now().Add(tokenTTL)},
-		IssuedAt:  &jwt.NumericDate{time.Now()},
+		ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(tokenTTL)},
+		IssuedAt:  &jwt.NumericDate{Time: time.Now()},
 	}, user.Id})
 
 	return token.SignedString([]byte(sighingKey))
+}
+
+func (s *AuthService) ParseToken(accessToken string) (int, error) {
+	token, err := jwt.ParseWithClaims(
+		accessToken,
+		&tokenClaims{},
+		func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("invalid signing method")
+			}
+
+			return []byte(sighingKey), nil
+		})
+	if err != nil {
+		return 0, err
+	}
+
+	claims, ok := token.Claims.(*tokenClaims)
+	if !ok {
+		return 0, errors.New("token claims are not type *tokenClaims")
+	}
+
+	return claims.UserId, nil
 }
 
 func generatePasswordHash(password string) string {
