@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"main.go/internal/entity"
@@ -14,7 +15,7 @@ func (h *Handler) createList(c *gin.Context) {
 		return
 	}
 
-	var input entity.TimeslotList
+	var input entity.TimeslotsList
 	if err := c.BindJSON(&input); err != nil {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
@@ -31,10 +32,46 @@ func (h *Handler) createList(c *gin.Context) {
 	})
 }
 
+type getAllListsResponse struct {
+	Data []entity.TimeslotsList `json:"data"`
+}
+
 func (h *Handler) getAllLists(c *gin.Context) {
+	userId, err := getUserId(c)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, "user userId not found")
+		return
+	}
+
+	lists, err := h.services.TimeslotList.GetAll(userId)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, getAllListsResponse{Data: lists})
 }
 
 func (h *Handler) getListBuId(c *gin.Context) {
+	userId, err := getUserId(c)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, "user userId not found")
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		newErrorResponse(c, http.StatusBadRequest, "invalid id parameter")
+		return
+	}
+
+	list, err := h.services.TimeslotList.GetById(userId, id)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, list)
 }
 
 func (h *Handler) updateList(c *gin.Context) {

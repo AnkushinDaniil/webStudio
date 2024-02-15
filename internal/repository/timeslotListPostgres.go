@@ -15,7 +15,7 @@ func NewTimeslotListPostgres(db *sqlx.DB) *TimeslotListPostgres {
 	return &TimeslotListPostgres{db: db}
 }
 
-func (r *TimeslotListPostgres) Create(userId int, list entity.TimeslotList) (int, error) {
+func (r *TimeslotListPostgres) Create(userId int, list entity.TimeslotsList) (int, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return 0, err
@@ -47,4 +47,28 @@ func (r *TimeslotListPostgres) Create(userId int, list entity.TimeslotList) (int
 	}
 
 	return id, tx.Commit()
+}
+
+func (r *TimeslotListPostgres) GetAll(userId int) ([]entity.TimeslotsList, error) {
+	var lists []entity.TimeslotsList
+	query := fmt.Sprintf(
+		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul 
+                                       on tl.id = ul.list_id WHERE ul.user_id = $1`,
+		timeslotListsTable,
+		usersListsTable,
+	)
+	err := r.db.Select(&lists, query, userId)
+	return lists, err
+}
+
+func (r *TimeslotListPostgres) GetById(userId, listId int) (entity.TimeslotsList, error) {
+	var list entity.TimeslotsList
+	query := fmt.Sprintf(
+		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul 
+                                       on tl.id = ul.list_id WHERE ul.user_id = $1 AND ul.list_id = $2`,
+		timeslotListsTable,
+		usersListsTable,
+	)
+	err := r.db.Get(&list, query, userId, listId)
+	return list, err
 }

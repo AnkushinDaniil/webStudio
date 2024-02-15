@@ -11,7 +11,9 @@ type Authorization interface {
 }
 
 type TimeslotList interface {
-	Create(id int, list entity.TimeslotList) (int, error)
+	Create(id int, list entity.TimeslotsList) (int, error)
+	GetAll(id int) ([]entity.TimeslotsList, error)
+	GetById(userId, listId int) (entity.TimeslotsList, error)
 }
 
 type TimeslotItem interface{}
