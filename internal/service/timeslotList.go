@@ -24,3 +24,7 @@ func (s *TimeslotListService) GetAll(userId int) ([]entity.TimeslotsList, error)
 func (s *TimeslotListService) GetById(userId, listId int) (entity.TimeslotsList, error) {
 	return s.repo.GetById(userId, listId)
 }
+
+func (s *TimeslotListService) Delete(userId, listId int) error {
+	return s.repo.Delete(userId, listId)
+}

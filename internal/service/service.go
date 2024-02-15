@@ -15,6 +15,7 @@ type TimeslotList interface {
 	Create(userId int, list entity.TimeslotsList) (int, error)
 	GetAll(userId int) ([]entity.TimeslotsList, error)
 	GetById(userId, listId int) (entity.TimeslotsList, error)
+	Delete(userId, listId int) error
 }
 
 type TimeslotItem interface{}

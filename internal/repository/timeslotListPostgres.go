@@ -72,3 +72,13 @@ func (r *TimeslotListPostgres) GetById(userId, listId int) (entity.TimeslotsList
 	err := r.db.Get(&list, query, userId, listId)
 	return list, err
 }
+
+func (r *TimeslotListPostgres) Delete(userId, listId int) error {
+	query := fmt.Sprintf(
+		`DELETE FROM %s tl USING %s ul WHERE tl.id = ul.list_id AND ul.user_id = $1 AND ul.list_id = $2`,
+		timeslotListsTable,
+		usersListsTable,
+	)
+	_, err := r.db.Exec(query, userId, listId)
+	return err
+}
