@@ -1,6 +1,9 @@
 package entity
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 type TimeslotsList struct {
 	ID          int    `db:"id"          json:"id"`
@@ -15,12 +18,12 @@ type UsersList struct {
 }
 
 type TimeslotItem struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Start       int    `json:"start"`
-	End         int    `json:"end"`
-	Done        bool   `json:"done"        db:"done"`
+	ID          int       `json:"id"          db:"id"`
+	Title       string    `json:"title"       db:"title"       binding:"required"`
+	Description string    `json:"description" db:"description"`
+	Start       time.Time `json:"start"       db:"beginning"   binding:"required"`
+	End         time.Time `json:"end"         db:"finish"      binding:"required"`
+	Done        bool      `json:"done"        db:"done"`
 }
 
 type ListsItem struct {

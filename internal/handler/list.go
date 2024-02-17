@@ -52,7 +52,7 @@ func (h *Handler) getAllLists(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, getAllListsResponse{Data: lists})
 }
 
-func (h *Handler) getListBuID(ctx *gin.Context) {
+func (h *Handler) getListByID(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")

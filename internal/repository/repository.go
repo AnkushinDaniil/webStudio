@@ -11,14 +11,17 @@ type Authorization interface {
 }
 
 type TimeslotList interface {
-	Create(id int, list entity.TimeslotsList) (int, error)
-	GetAll(id int) ([]entity.TimeslotsList, error)
+	Create(userID int, list entity.TimeslotsList) (int, error)
+	GetAll(userID int) ([]entity.TimeslotsList, error)
 	GetByID(userID, listID int) (entity.TimeslotsList, error)
 	Delete(userID, listID int) error
 	Update(userID, listID int, input entity.UpdateListInput) error
 }
 
-type TimeslotItem interface{}
+type TimeslotItem interface {
+	Create(listID int, item entity.TimeslotItem) (int, error)
+	GetAll(userID, listID int) ([]entity.TimeslotItem, error)
+}
 
 type Repository struct {
 	Authorization
@@ -30,5 +33,6 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		TimeslotList:  NewTimeslotListPostgres(db),
+		TimeslotItem:  NewTimeslotItemPostgres(db),
 	}
 }

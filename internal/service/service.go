@@ -19,7 +19,10 @@ type TimeslotList interface {
 	Update(userID, listID int, input entity.UpdateListInput) error
 }
 
-type TimeslotItem interface{}
+type TimeslotItem interface {
+	Create(userID, listID int, input entity.TimeslotItem) (int, error)
+	GetAll(userID, listID int) ([]entity.TimeslotItem, error)
+}
 
 type Service struct {
 	Authorization
@@ -31,6 +34,6 @@ func NewService(repo *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repo.Authorization),
 		TimeslotList:  NewTimeslotListService(repo.TimeslotList),
-		TimeslotItem:  nil,
+		TimeslotItem:  NewTimeslotItemService(repo.TimeslotItem, repo.TimeslotList),
 	}
 }
