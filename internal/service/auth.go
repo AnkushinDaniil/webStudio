@@ -1,8 +1,8 @@
 package service
 
 import (
+	"encoding/hex"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -19,7 +19,7 @@ const (
 
 type tokenClaims struct {
 	jwt.RegisteredClaims
-	UserId int `json:"user_id"`
+	UserID int `json:"user_id"`
 }
 
 type AuthService struct {
@@ -44,7 +44,7 @@ func (s *AuthService) GenerateToken(username, password string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{jwt.RegisteredClaims{
 		ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(tokenTTL)},
 		IssuedAt:  &jwt.NumericDate{Time: time.Now()},
-	}, user.Id})
+	}, user.ID})
 
 	return token.SignedString([]byte(sighingKey))
 }
@@ -69,12 +69,12 @@ func (s *AuthService) ParseToken(accessToken string) (int, error) {
 		return 0, errors.New("token claims are not type *tokenClaims")
 	}
 
-	return claims.UserId, nil
+	return claims.UserID, nil
 }
 
 func generatePasswordHash(password string) string {
 	hash := sha3.New256()
 	hash.Write(([]byte(password)))
 
-	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
+	return hex.EncodeToString(hash.Sum([]byte(salt)))
 }

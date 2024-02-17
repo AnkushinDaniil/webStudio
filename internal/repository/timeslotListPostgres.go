@@ -2,8 +2,10 @@ package repository
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"main.go/internal/entity"
 )
 
@@ -15,22 +17,25 @@ func NewTimeslotListPostgres(db *sqlx.DB) *TimeslotListPostgres {
 	return &TimeslotListPostgres{db: db}
 }
 
-func (r *TimeslotListPostgres) Create(userId int, list entity.TimeslotsList) (int, error) {
-	tx, err := r.db.Begin()
+func (r *TimeslotListPostgres) Create(userID int, list entity.TimeslotsList) (int, error) {
+	transaction, err := r.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 
-	var id int
+	var listID int
+
 	createListQuery := fmt.Sprintf(
 		"INSERT INTO %s (title, description) VALUES ($1, $2) RETURNING id",
 		timeslotListsTable,
 	)
-	row := tx.QueryRow(createListQuery, list.Title, list.Description)
-	if err = row.Scan(&id); err != nil {
-		if err = tx.Rollback(); err != nil {
+	row := transaction.QueryRow(createListQuery, list.Title, list.Description)
+
+	if err = row.Scan(&listID); err != nil {
+		if err = transaction.Rollback(); err != nil {
 			return 0, err
 		}
+
 		return 0, err
 	}
 
@@ -38,47 +43,89 @@ func (r *TimeslotListPostgres) Create(userId int, list entity.TimeslotsList) (in
 		"INSERT INTO %s (user_id, list_id) VALUES ($1, $2)",
 		usersListsTable,
 	)
-	_, err = tx.Exec(createUsersListQuery, userId, id)
-	if err != nil {
-		if err = tx.Rollback(); err != nil {
+
+	if _, err = transaction.Exec(createUsersListQuery, userID, listID); err != nil {
+		if err = transaction.Rollback(); err != nil {
 			return 0, err
 		}
+
 		return 0, err
 	}
 
-	return id, tx.Commit()
+	return listID, transaction.Commit()
 }
 
-func (r *TimeslotListPostgres) GetAll(userId int) ([]entity.TimeslotsList, error) {
+func (r *TimeslotListPostgres) GetAll(userID int) ([]entity.TimeslotsList, error) {
 	var lists []entity.TimeslotsList
+
 	query := fmt.Sprintf(
-		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul 
-                                       on tl.id = ul.list_id WHERE ul.user_id = $1`,
+		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul on tl.id = ul.list_id WHERE ul.user_id = $1`,
 		timeslotListsTable,
 		usersListsTable,
 	)
-	err := r.db.Select(&lists, query, userId)
+	err := r.db.Select(&lists, query, userID)
+
 	return lists, err
 }
 
-func (r *TimeslotListPostgres) GetById(userId, listId int) (entity.TimeslotsList, error) {
+func (r *TimeslotListPostgres) GetByID(userID, listID int) (entity.TimeslotsList, error) {
 	var list entity.TimeslotsList
+
 	query := fmt.Sprintf(
 		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul 
                                        on tl.id = ul.list_id WHERE ul.user_id = $1 AND ul.list_id = $2`,
 		timeslotListsTable,
 		usersListsTable,
 	)
-	err := r.db.Get(&list, query, userId, listId)
+	err := r.db.Get(&list, query, userID, listID)
+
 	return list, err
 }
 
-func (r *TimeslotListPostgres) Delete(userId, listId int) error {
+func (r *TimeslotListPostgres) Update(userID, listID int, input entity.UpdateListInput) error {
+	setValues := make([]string, 0)
+	args := make([]interface{}, 0)
+	argID := 1
+
+	if input.Title != nil {
+		setValues = append(setValues, fmt.Sprintf("title=$%d", argID))
+		args = append(args, *input.Title)
+		argID++
+	}
+
+	if input.Description != nil {
+		setValues = append(setValues, fmt.Sprintf("description=$%d", argID))
+		args = append(args, *input.Description)
+		argID++
+	}
+
+	setQuery := strings.Join(setValues, ", ")
+	query := fmt.Sprintf(
+		`UPDATE %s tl SET %s FROM %s ul WHERE tl.id = ul.list_id AND ul.list_id=$%d AND ul.user_id=$%d`,
+		timeslotListsTable,
+		setQuery,
+		usersListsTable,
+		argID,
+		argID+1,
+	)
+
+	args = append(args, listID, userID)
+
+	logrus.Debugf("updateQuery: %s", query)
+	logrus.Debugf("args: %s", args...)
+
+	_, err := r.db.Exec(query, args...)
+
+	return err
+}
+
+func (r *TimeslotListPostgres) Delete(userID, listID int) error {
 	query := fmt.Sprintf(
 		`DELETE FROM %s tl USING %s ul WHERE tl.id = ul.list_id AND ul.user_id = $1 AND ul.list_id = $2`,
 		timeslotListsTable,
 		usersListsTable,
 	)
-	_, err := r.db.Exec(query, userId, listId)
+	_, err := r.db.Exec(query, userID, listID)
+
 	return err
 }

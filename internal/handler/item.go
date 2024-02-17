@@ -2,17 +2,17 @@ package handler
 
 import "github.com/gin-gonic/gin"
 
-func (h *Handler) createItem(c *gin.Context) {
+func (h *Handler) createItem(ctx *gin.Context) {
 }
 
-func (h *Handler) getAllItems(c *gin.Context) {
+func (h *Handler) getAllItems(ctx *gin.Context) {
 }
 
-func (h *Handler) getItemBuId(c *gin.Context) {
+func (h *Handler) getItemBuID(ctx *gin.Context) {
 }
 
-func (h *Handler) updateItem(c *gin.Context) {
+func (h *Handler) updateItem(ctx *gin.Context) {
 }
 
-func (h *Handler) deleteItem(c *gin.Context) {
+func (h *Handler) deleteItem(ctx *gin.Context) {
 }

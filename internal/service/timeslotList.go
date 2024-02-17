@@ -13,18 +13,26 @@ func NewTimeslotListService(repo repository.TimeslotList) *TimeslotListService {
 	return &TimeslotListService{repo: repo}
 }
 
-func (s *TimeslotListService) Create(userId int, list entity.TimeslotsList) (int, error) {
-	return s.repo.Create(userId, list)
+func (s *TimeslotListService) Create(userID int, list entity.TimeslotsList) (int, error) {
+	return s.repo.Create(userID, list)
 }
 
-func (s *TimeslotListService) GetAll(userId int) ([]entity.TimeslotsList, error) {
-	return s.repo.GetAll(userId)
+func (s *TimeslotListService) GetAll(userID int) ([]entity.TimeslotsList, error) {
+	return s.repo.GetAll(userID)
 }
 
-func (s *TimeslotListService) GetById(userId, listId int) (entity.TimeslotsList, error) {
-	return s.repo.GetById(userId, listId)
+func (s *TimeslotListService) GetByID(userID, listID int) (entity.TimeslotsList, error) {
+	return s.repo.GetByID(userID, listID)
 }
 
-func (s *TimeslotListService) Delete(userId, listId int) error {
-	return s.repo.Delete(userId, listId)
+func (s *TimeslotListService) Update(userID, listID int, input entity.UpdateListInput) error {
+	if err := input.Validate(); err != nil {
+		return err
+	}
+
+	return s.repo.Update(userID, listID, input)
+}
+
+func (s *TimeslotListService) Delete(userID, listID int) error {
+	return s.repo.Delete(userID, listID)
 }

@@ -1,19 +1,21 @@
 package entity
 
+import "errors"
+
 type TimeslotsList struct {
-	Id          int    `json:"id"          db:"id"`
-	Title       string `json:"title"       db:"title"       binding:"required"`
-	Description string `json:"description" db:"description"`
+	ID          int    `db:"id"          json:"id"`
+	Title       string `db:"title"       json:"title"       binding:"required"`
+	Description string `db:"description" json:"description"`
 }
 
 type UsersList struct {
-	Id     int
-	UserId int
-	ListId int
+	ID     int
+	UserID int
+	ListID int
 }
 
 type TimeslotItem struct {
-	Id          int    `json:"id"`
+	ID          int    `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Start       int    `json:"start"`
@@ -22,7 +24,20 @@ type TimeslotItem struct {
 }
 
 type ListsItem struct {
-	Id     int
-	ListId int
-	ItemId int
+	ID     int
+	ListID int
+	ItemID int
+}
+
+type UpdateListInput struct {
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
+}
+
+func (i *UpdateListInput) Validate() error {
+	if i.Title == nil && i.Description == nil {
+		return errors.New("update structure has no values")
+	}
+
+	return nil
 }

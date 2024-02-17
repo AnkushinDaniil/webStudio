@@ -8,27 +8,27 @@ import (
 	"main.go/internal/entity"
 )
 
-func (h *Handler) createList(c *gin.Context) {
-	userId, err := getUserId(c)
+func (h *Handler) createList(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user userId not found")
+		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
 	var input entity.TimeslotsList
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
+	if err = ctx.BindJSON(&input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	id, err := h.services.TimeslotList.Create(userId, input)
+	listID, err := h.services.TimeslotList.Create(userID, input)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"id": id,
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"id": listID,
 	})
 }
 
@@ -36,65 +36,88 @@ type getAllListsResponse struct {
 	Data []entity.TimeslotsList `json:"data"`
 }
 
-func (h *Handler) getAllLists(c *gin.Context) {
-	userId, err := getUserId(c)
+func (h *Handler) getAllLists(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user userId not found")
+		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	lists, err := h.services.TimeslotList.GetAll(userId)
+	lists, err := h.services.TimeslotList.GetAll(userID)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, getAllListsResponse{Data: lists})
+	ctx.JSON(http.StatusOK, getAllListsResponse{Data: lists})
 }
 
-func (h *Handler) getListBuId(c *gin.Context) {
-	userId, err := getUserId(c)
+func (h *Handler) getListBuID(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user userId not found")
+		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	id, err := strconv.Atoi(c.Param("id"))
+	listID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid id parameter")
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
 		return
 	}
 
-	list, err := h.services.TimeslotList.GetById(userId, id)
+	list, err := h.services.TimeslotList.GetByID(userID, listID)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, list)
+	ctx.JSON(http.StatusOK, list)
 }
 
-func (h *Handler) updateList(c *gin.Context) {
+func (h *Handler) updateList(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return
+	}
+
+	listID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
+		return
+	}
+
+	var input entity.UpdateListInput
+	if err = ctx.BindJSON(&input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err = h.services.Update(userID, listID, input); err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, statusResponse{"ok"})
 }
 
-func (h *Handler) deleteList(c *gin.Context) {
-	userId, err := getUserId(c)
+func (h *Handler) deleteList(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "user userId not found")
+		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	id, err := strconv.Atoi(c.Param("id"))
+	listID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid id parameter")
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
 		return
 	}
 
-	err = h.services.TimeslotList.Delete(userId, id)
+	err = h.services.TimeslotList.Delete(userID, listID)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, statusResponse{Status: "ok"})
+	ctx.JSON(http.StatusOK, statusResponse{Status: "ok"})
 }

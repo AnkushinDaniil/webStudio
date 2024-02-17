@@ -12,10 +12,11 @@ type Authorization interface {
 }
 
 type TimeslotList interface {
-	Create(userId int, list entity.TimeslotsList) (int, error)
-	GetAll(userId int) ([]entity.TimeslotsList, error)
-	GetById(userId, listId int) (entity.TimeslotsList, error)
-	Delete(userId, listId int) error
+	Create(userID int, list entity.TimeslotsList) (int, error)
+	GetAll(userID int) ([]entity.TimeslotsList, error)
+	GetByID(userID, listID int) (entity.TimeslotsList, error)
+	Delete(userID, listID int) error
+	Update(userID, listID int, input entity.UpdateListInput) error
 }
 
 type TimeslotItem interface{}
@@ -30,5 +31,6 @@ func NewService(repo *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repo.Authorization),
 		TimeslotList:  NewTimeslotListService(repo.TimeslotList),
+		TimeslotItem:  nil,
 	}
 }
