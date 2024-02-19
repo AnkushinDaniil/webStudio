@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"reflect"
 	"time"
 )
 
@@ -43,4 +44,23 @@ func (i *UpdateListInput) Validate() error {
 	}
 
 	return nil
+}
+
+type UpdateItemInput struct {
+	Title       *string    `json:"title"       db:"title"`
+	Description *string    `json:"description" db:"description"`
+	Start       *time.Time `json:"start"       db:"beginning"`
+	End         *time.Time `json:"end"         db:"finish"`
+	Done        *bool      `json:"done"        db:"done"`
+}
+
+func (i *UpdateItemInput) Validate() error {
+	val := reflect.ValueOf(i).Elem()
+	for j := 0; j < val.NumField(); j++ {
+		if !val.Field(j).IsNil() {
+			return nil
+		}
+	}
+
+	return errors.New("update structure has no values")
 }

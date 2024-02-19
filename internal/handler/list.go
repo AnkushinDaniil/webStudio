@@ -92,7 +92,7 @@ func (h *Handler) updateList(ctx *gin.Context) {
 		return
 	}
 
-	if err = h.services.Update(userID, listID, input); err != nil {
+	if err = h.services.TimeslotList.Update(userID, listID, input); err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}

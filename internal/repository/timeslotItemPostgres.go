@@ -2,8 +2,11 @@ package repository
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"main.go/internal/entity"
 )
 
@@ -71,64 +74,75 @@ func (r *TimeslotItemPostgres) GetAll(userID, listID int) ([]entity.TimeslotItem
 	return items, nil
 }
 
-func (r *TimeslotItemPostgres) GetByID(userID, listID int) (entity.TimeslotsList, error) {
-	var list entity.TimeslotsList
+func (r *TimeslotItemPostgres) GetByID(userID, itemID int) (entity.TimeslotItem, error) {
+	var item entity.TimeslotItem
 
 	query := fmt.Sprintf(
-		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul 
-                                       on tl.id = ul.list_id WHERE ul.user_id = $1 AND ul.list_id = $2`,
-		timeslotListsTable,
+		`SELECT ti.id, ti.title, ti.description,
+		ti.beginning, ti.finish, ti.done FROM %s ti INNER JOIN %s li on li.item_id = ti.id
+		INNER JOIN %s ul on ul.list_id = li.list_id WHERE ti.id = $1 AND ul.user_id = $2`,
+		timeslotsItemsTable,
+		listsItemsTable,
 		usersListsTable,
 	)
-	err := r.db.Get(&list, query, userID, listID)
+	if err := r.db.Get(&item, query, itemID, userID); err != nil {
+		return item, err
+	}
 
-	return list, err
+	return item, nil
 }
 
-// func (r *TimeslotItemPostgres) Update(userID, listID int, input entity.UpdateListInput) error {
-// 	setValues := make([]string, 0)
-// 	args := make([]interface{}, 0)
-// 	argID := 1
+func (r *TimeslotItemPostgres) Update(userID, itemID int, input entity.UpdateItemInput) error {
+	setValues := make([]string, 0)
+	args := make([]interface{}, 0)
+	argID := 1
 
-// 	if input.Title != nil {
-// 		setValues = append(setValues, fmt.Sprintf("title=$%d", argID))
-// 		args = append(args, *input.Title)
-// 		argID++
-// 	}
+	refVal := reflect.ValueOf(&input).Elem()
+	refType := reflect.TypeOf(input)
 
-// 	if input.Description != nil {
-// 		setValues = append(setValues, fmt.Sprintf("description=$%d", argID))
-// 		args = append(args, *input.Description)
-// 		argID++
-// 	}
+	for i := 0; i < refVal.NumField(); i++ {
+		field := refVal.Field(i)
+		if !field.IsNil() {
+			setValues = append(
+				setValues,
+				fmt.Sprintf("%s=$%d", refType.Field(i).Tag.Get("db"), argID),
+			)
+			args = append(args, field.Elem().Interface())
+			argID++
+		}
+	}
 
-// 	setQuery := strings.Join(setValues, ", ")
-// 	query := fmt.Sprintf(
-// 		`UPDATE %s tl SET %s FROM %s ul WHERE tl.id = ul.list_id AND ul.list_id=$%d AND ul.user_id=$%d`,
-// 		timeslotListsTable,
-// 		setQuery,
-// 		usersListsTable,
-// 		argID,
-// 		argID+1,
-// 	)
+	setQuery := strings.Join(setValues, ", ")
+	query := fmt.Sprintf(
+		`UPDATE %s ti SET %s FROM %s li, %s ul WHERE ti.id = li.item_id AND 
+		li.list_id = ul.list_id AND ul.user_id = $%d AND ti.id = $%d`,
+		timeslotsItemsTable,
+		setQuery,
+		listsItemsTable,
+		usersListsTable,
+		argID,
+		argID+1,
+	)
 
-// 	args = append(args, listID, userID)
+	args = append(args, userID, itemID)
 
-// 	logrus.Debugf("updateQuery: %s", query)
-// 	logrus.Debugf("args: %s", args...)
+	logrus.Debugf("updateQuery: %s \n", query)
+	logrus.Debugf("args: %s \n", args...)
 
-// 	_, err := r.db.Exec(query, args...)
+	_, err := r.db.Exec(query, args...)
 
-// 	return err
-// }
+	return err
+}
 
-// func (r *TimeslotItemPostgres) Delete(userID, listID int) error {
-// 	query := fmt.Sprintf(
-// 		`DELETE FROM %s tl USING %s ul WHERE tl.id = ul.list_id AND ul.user_id = $1 AND ul.list_id = $2`,
-// 		timeslotListsTable,
-// 		usersListsTable,
-// 	)
-// 	_, err := r.db.Exec(query, userID, listID)
+func (r *TimeslotItemPostgres) Delete(userID, itemID int) error {
+	query := fmt.Sprintf(
+		`DELETE FROM %s ti USING %s li , %s ul WHERE ti.id = li.item_id AND ul.user_id = $1 AND 
+		li.list_id = ul.list_id AND ul.user_id = $1 AND ti.id = $2`,
+		timeslotsItemsTable,
+		listsItemsTable,
+		usersListsTable,
+	)
+	_, err := r.db.Exec(query, userID, itemID)
 
-// 	return err
-// }
+	return err
+}

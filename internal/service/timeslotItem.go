@@ -31,18 +31,18 @@ func (s *TimeslotItemService) GetAll(userID, listID int) ([]entity.TimeslotItem,
 	return s.itemRepo.GetAll(userID, listID)
 }
 
-// func (s *TimeslotItemService) GetByID(userID, listID int) (entity.TimeslotsList, error) {
-// 	return s.itemRepo.GetByID(userID, listID)
-// }
+func (s *TimeslotItemService) GetByID(userID, itemID int) (entity.TimeslotItem, error) {
+	return s.itemRepo.GetByID(userID, itemID)
+}
 
-// func (s *TimeslotItemService) Update(userID, listID int, input entity.UpdateListInput) error {
-// 	if err := input.Validate(); err != nil {
-// 		return err
-// 	}
+func (s *TimeslotItemService) Delete(userID, itemID int) error {
+	return s.itemRepo.Delete(userID, itemID)
+}
 
-// 	return s.itemRepo.Update(userID, listID, input)
-// }
+func (s *TimeslotItemService) Update(userID, itemID int, input entity.UpdateItemInput) error {
+	if err := input.Validate(); err != nil {
+		return err
+	}
 
-// func (s *TimeslotItemService) Delete(userID, listID int) error {
-// 	return s.itemRepo.Delete(userID, listID)
-// }
+	return s.itemRepo.Update(userID, itemID, input)
+}

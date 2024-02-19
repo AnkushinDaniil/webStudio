@@ -48,7 +48,7 @@ func (h *Handler) getAllItems(ctx *gin.Context) {
 
 	listID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid list id parameter")
 		return
 	}
 
@@ -62,10 +62,71 @@ func (h *Handler) getAllItems(ctx *gin.Context) {
 }
 
 func (h *Handler) getItemByID(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
+		return
+	}
+
+	itemID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid item id parameter")
+		return
+	}
+
+	item, err := h.services.TimeslotItem.GetByID(userID, itemID)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, item)
 }
 
 func (h *Handler) updateItem(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
+	if err != nil {
+		return
+	}
+
+	itemID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
+		return
+	}
+
+	var input entity.UpdateItemInput
+	if err = ctx.BindJSON(&input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err = h.services.TimeslotItem.Update(userID, itemID, input); err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, statusResponse{"ok"})
 }
 
 func (h *Handler) deleteItem(ctx *gin.Context) {
+	userID, err := getUserID(ctx)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
+		return
+	}
+
+	itemID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid item id parameter")
+		return
+	}
+
+	err = h.services.TimeslotItem.Delete(userID, itemID)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, statusResponse{Status: "ok"})
 }

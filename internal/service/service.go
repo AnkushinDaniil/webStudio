@@ -22,6 +22,9 @@ type TimeslotList interface {
 type TimeslotItem interface {
 	Create(userID, listID int, input entity.TimeslotItem) (int, error)
 	GetAll(userID, listID int) ([]entity.TimeslotItem, error)
+	GetByID(userID, itemID int) (entity.TimeslotItem, error)
+	Delete(userID, itemID int) error
+	Update(userID, itemID int, input entity.UpdateItemInput) error
 }
 
 type Service struct {
