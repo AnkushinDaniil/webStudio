@@ -23,16 +23,19 @@ func (h *Handler) signUp(ctx *gin.Context) {
 	var input entity.User
 
 	if err := ctx.BindJSON(&input); err != nil {
-		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		newErrorResponse(ctx, http.StatusBadRequest, "invalid input body")
 		return
 	}
 
-	id, err := h.services.Authorization.CreateUser(input)
+	userID, err := h.services.Authorization.CreateUser(input)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	ctx.JSON(http.StatusOK, map[string]interface{}{"id": id})
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"id": userID,
+	})
 }
 
 type sighInInput struct {
