@@ -1,5 +1,6 @@
 .trunk
 .env
 .idea
+.database
 GoogleApplicationCredentals
 node_modules

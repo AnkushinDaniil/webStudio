@@ -49,7 +49,7 @@ func main() {
 		SSLMode:  viper.GetString("db.sslmode"),
 	})
 	if err != nil {
-		logrus.Fatalf("failed to initialize bd: %s", err.Error())
+		logrus.Fatalf("failed to initialize db: %s", err.Error())
 	}
 
 	repo := repository.NewRepository(dataBase)

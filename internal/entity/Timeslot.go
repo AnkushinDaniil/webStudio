@@ -39,11 +39,14 @@ type UpdateListInput struct {
 }
 
 func (i *UpdateListInput) Validate() error {
-	if i.Title == nil && i.Description == nil {
-		return errors.New("update structure has no values")
+	val := reflect.ValueOf(i).Elem()
+	for j := 0; j < val.NumField(); j++ {
+		if !val.Field(j).IsNil() {
+			return nil
+		}
 	}
 
-	return nil
+	return errors.New("update structure has no values")
 }
 
 type UpdateItemInput struct {
