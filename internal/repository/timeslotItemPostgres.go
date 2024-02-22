@@ -32,7 +32,7 @@ func (r *TimeslotItemPostgres) Create(listID int, item entity.TimeslotItem) (int
 	row := transaction.QueryRow(createItemQuery, item.Title, item.Description, item.Start, item.End)
 
 	if err = row.Scan(&itemID); err != nil {
-		if err1 := transaction.Rollback(); err != nil {
+		if err1 := transaction.Rollback(); err1 != nil {
 			return 0, err1
 		}
 
@@ -45,7 +45,7 @@ func (r *TimeslotItemPostgres) Create(listID int, item entity.TimeslotItem) (int
 	)
 
 	if _, err = transaction.Exec(createListsItemsQuery, listID, itemID); err != nil {
-		if err = transaction.Rollback(); err != nil {
+		if err1 := transaction.Rollback(); err1 != nil {
 			return 0, err
 		}
 
