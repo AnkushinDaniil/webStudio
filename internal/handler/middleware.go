@@ -21,8 +21,13 @@ func (h *Handler) userIdentity(ctx *gin.Context) {
 	}
 
 	headerParts := strings.Split(header, " ")
-	if len(headerParts) != 2 {
+	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
 		newErrorResponse(ctx, http.StatusUnauthorized, "invalid authorization header")
+		return
+	}
+
+	if len(headerParts[1]) == 0 {
+		newErrorResponse(ctx, http.StatusUnauthorized, "token is empty")
 		return
 	}
 
