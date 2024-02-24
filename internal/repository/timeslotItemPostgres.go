@@ -31,7 +31,7 @@ func (r *TimeslotItemPostgres) Create(listID int, item entity.TimeslotItem) (int
 			    VALUES ($1, $2, $3, $4)
 			RETURNING
 			    id`,
-		timeslotsItemsTable,
+		TimeslotsItemsTable,
 	)
 	row := transaction.QueryRow(createItemQuery, item.Title, item.Description, item.Start, item.End)
 
@@ -47,7 +47,7 @@ func (r *TimeslotItemPostgres) Create(listID int, item entity.TimeslotItem) (int
 		`
 			INSERT INTO %s (list_id, item_id)
 			    VALUES ($1, $2)`,
-		listsItemsTable,
+		ListsItemsTable,
 	)
 
 	if _, err = transaction.Exec(createListsItemsQuery, listID, itemID); err != nil {
@@ -80,9 +80,9 @@ func (r *TimeslotItemPostgres) GetAll(userID, listID int) ([]entity.TimeslotItem
 			WHERE
 			    li.list_id = $1
 			    AND ul.user_id = $2`,
-		timeslotsItemsTable,
-		listsItemsTable,
-		usersListsTable,
+		TimeslotsItemsTable,
+		ListsItemsTable,
+		UsersListsTable,
 	)
 
 	if err := r.db.Select(&items, query, listID, userID); err != nil {
@@ -111,9 +111,9 @@ func (r *TimeslotItemPostgres) GetByID(userID, itemID int) (entity.TimeslotItem,
 			WHERE
 			    ti.id = $1
 			    AND ul.user_id = $2`,
-		timeslotsItemsTable,
-		listsItemsTable,
-		usersListsTable,
+		TimeslotsItemsTable,
+		ListsItemsTable,
+		UsersListsTable,
 	)
 	if err := r.db.Get(&item, query, itemID, userID); err != nil {
 		return item, err
@@ -157,10 +157,10 @@ func (r *TimeslotItemPostgres) Update(userID, itemID int, input entity.UpdateIte
 			    AND li.list_id = ul.list_id
 			    AND ul.user_id = $ %d
 			    AND ti.id = $ %d`,
-		timeslotsItemsTable,
+		TimeslotsItemsTable,
 		setQuery,
-		listsItemsTable,
-		usersListsTable,
+		ListsItemsTable,
+		UsersListsTable,
 		argID,
 		argID+1,
 	)
@@ -184,9 +184,9 @@ func (r *TimeslotItemPostgres) Delete(userID, itemID int) error {
 			    AND li.list_id = ul.list_id
 			    AND ul.user_id = $1
 			    AND ti.id = $2`,
-		timeslotsItemsTable,
-		listsItemsTable,
-		usersListsTable,
+		TimeslotsItemsTable,
+		ListsItemsTable,
+		UsersListsTable,
 	)
 	_, err := r.db.Exec(query, userID, itemID)
 

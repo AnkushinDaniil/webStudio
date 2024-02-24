@@ -27,7 +27,7 @@ func (r *TimeslotListPostgres) Create(userID int, list entity.TimeslotsList) (in
 
 	createListQuery := fmt.Sprintf(
 		"INSERT INTO %s (title, description) VALUES ($1, $2) RETURNING id",
-		timeslotListsTable,
+		TimeslotListsTable,
 	)
 	row := transaction.QueryRow(createListQuery, list.Title, list.Description)
 
@@ -41,7 +41,7 @@ func (r *TimeslotListPostgres) Create(userID int, list entity.TimeslotsList) (in
 
 	createUsersListQuery := fmt.Sprintf(
 		"INSERT INTO %s (user_id, list_id) VALUES ($1, $2)",
-		usersListsTable,
+		UsersListsTable,
 	)
 
 	if _, err = transaction.Exec(createUsersListQuery, userID, listID); err != nil {
@@ -60,8 +60,8 @@ func (r *TimeslotListPostgres) GetAll(userID int) ([]entity.TimeslotsList, error
 
 	query := fmt.Sprintf(
 		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul on tl.id = ul.list_id WHERE ul.user_id = $1`,
-		timeslotListsTable,
-		usersListsTable,
+		TimeslotListsTable,
+		UsersListsTable,
 	)
 	err := r.db.Select(&lists, query, userID)
 
@@ -74,8 +74,8 @@ func (r *TimeslotListPostgres) GetByID(userID, listID int) (entity.TimeslotsList
 	query := fmt.Sprintf(
 		`SELECT tl.id, tl.title, tl.description FROM %s tl INNER JOIN %s ul 
                                        on tl.id = ul.list_id WHERE ul.user_id = $1 AND ul.list_id = $2`,
-		timeslotListsTable,
-		usersListsTable,
+		TimeslotListsTable,
+		UsersListsTable,
 	)
 	err := r.db.Get(&list, query, userID, listID)
 
@@ -102,9 +102,9 @@ func (r *TimeslotListPostgres) Update(userID, listID int, input entity.UpdateLis
 	setQuery := strings.Join(setValues, ", ")
 	query := fmt.Sprintf(
 		`UPDATE %s tl SET %s FROM %s ul WHERE tl.id = ul.list_id AND ul.list_id=$%d AND ul.user_id=$%d`,
-		timeslotListsTable,
+		TimeslotListsTable,
 		setQuery,
-		usersListsTable,
+		UsersListsTable,
 		argID,
 		argID+1,
 	)
@@ -122,8 +122,8 @@ func (r *TimeslotListPostgres) Update(userID, listID int, input entity.UpdateLis
 func (r *TimeslotListPostgres) Delete(userID, listID int) error {
 	query := fmt.Sprintf(
 		`DELETE FROM %s tl USING %s ul WHERE tl.id = ul.list_id AND ul.user_id = $1 AND ul.list_id = $2`,
-		timeslotListsTable,
-		usersListsTable,
+		TimeslotListsTable,
+		UsersListsTable,
 	)
 	_, err := r.db.Exec(query, userID, listID)
 
