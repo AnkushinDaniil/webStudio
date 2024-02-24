@@ -13,6 +13,8 @@ import (
 	"main.go/internal/repository"
 )
 
+var timeNow = time.Now()
+
 func TestTimeslotItemPostgres_Create(t *testing.T) {
 	dataBase, mock, err := sqlmock.Newx()
 	if err != nil {
@@ -21,6 +23,8 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 	defer dataBase.Close()
 
 	rep := repository.NewTimeslotItemPostgres(dataBase)
+	query := `
+		INSERT INTO timeslots_items`
 
 	type input struct {
 		listID int
@@ -39,8 +43,7 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 			mockBehavior: func(input input, itemID int) {
 				mock.ExpectBegin()
 				rows := sqlmock.NewRows([]string{"id"}).AddRow(itemID)
-				mock.ExpectQuery(`
-					INSERT INTO timeslots_items`).
+				mock.ExpectQuery(query).
 					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
 					WillReturnRows(rows)
 
@@ -71,8 +74,7 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"id"}).
 					AddRow(itemID).
 					RowError(0, errors.New("some error"))
-				mock.ExpectQuery(`
-					INSERT INTO timeslots_items`).
+				mock.ExpectQuery(query).
 					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
 					WillReturnRows(rows)
 
@@ -96,8 +98,7 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 			mockBehavior: func(input input, itemID int) {
 				mock.ExpectBegin()
 				rows := sqlmock.NewRows([]string{"id"}).AddRow(itemID)
-				mock.ExpectQuery(`
-					INSERT INTO timeslots_items`).
+				mock.ExpectQuery(query).
 					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
 					WillReturnRows(rows)
 
@@ -147,13 +148,23 @@ func TestTimeslotItemPostgres_GetAll(t *testing.T) {
 	defer dataBase.Close()
 
 	rep := repository.NewTimeslotItemPostgres(dataBase)
+	query := fmt.Sprintf(
+		`
+			SELECT
+			    (.+)
+			FROM
+			    %s ti
+			    INNER JOIN %s li ON (.+)
+			    INNER JOIN %s ul ON (.+)
+			WHERE (.+)`,
+		repository.TimeslotsItemsTable,
+		repository.ListsItemsTable,
+		repository.UsersListsTable)
 
 	type input struct {
 		listID int
 		userID int
 	}
-
-	timeNow := time.Now()
 
 	testTable := []struct {
 		name         string
@@ -170,19 +181,7 @@ func TestTimeslotItemPostgres_GetAll(t *testing.T) {
 					AddRow(2, "title2", "description2", timeNow, timeNow, false).
 					AddRow(3, "title3", "description3", timeNow, timeNow, false)
 
-				mock.ExpectQuery(fmt.Sprintf(
-					`
-						SELECT
-						    (.+)
-						FROM
-						    %s ti
-						    INNER JOIN %s li ON (.+)
-						    INNER JOIN %s ul ON (.+)
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable),
-				).
+				mock.ExpectQuery(query).
 					WithArgs(1, 1).
 					WillReturnRows(rows)
 			},
@@ -224,19 +223,7 @@ func TestTimeslotItemPostgres_GetAll(t *testing.T) {
 				rows := sqlmock.NewRows(
 					[]string{"id", "title", "description", "beginning", "finish", "done"},
 				)
-				mock.ExpectQuery(fmt.Sprintf(
-					`
-						SELECT
-						    (.+)
-						FROM
-						    %s ti
-						    INNER JOIN %s li ON (.+)
-						    INNER JOIN %s ul ON (.+)
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable),
-				).
+				mock.ExpectQuery(query).
 					WithArgs(1, 1).
 					WillReturnRows(rows)
 			},
@@ -273,13 +260,24 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 	defer dataBase.Close()
 
 	rep := repository.NewTimeslotItemPostgres(dataBase)
+	query := fmt.Sprintf(
+		`
+			SELECT
+			    (.+)
+			FROM
+			    %s ti
+			    INNER JOIN %s li ON (.+)
+			    INNER JOIN %s ul ON (.+)
+			WHERE (.+)`,
+		repository.TimeslotsItemsTable,
+		repository.ListsItemsTable,
+		repository.UsersListsTable,
+	)
 
 	type input struct {
 		itemID int
 		userID int
 	}
-
-	timeNow := time.Now()
 
 	testTable := []struct {
 		name         string
@@ -293,19 +291,7 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 			mockBehavior: func() {
 				rows := sqlmock.NewRows([]string{"id", "title", "description", "beginning", "finish", "done"}).
 					AddRow(1, "title1", "description1", timeNow, timeNow, true)
-				mock.ExpectQuery(fmt.Sprintf(
-					`
-						SELECT
-						    (.+)
-						FROM
-						    %s ti
-						    INNER JOIN %s li ON (.+)
-						    INNER JOIN %s ul ON (.+)
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
-				)).
+				mock.ExpectQuery(query).
 					WithArgs(1, 1).
 					WillReturnRows(rows)
 			},
@@ -324,27 +310,15 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "NotFount",
+			name: "NotFound",
 			mockBehavior: func() {
-				mock.ExpectQuery(fmt.Sprintf(
-					`
-						SELECT
-						    (.+)
-						FROM
-						    %s ti
-						    INNER JOIN %s li ON (.+)
-						    INNER JOIN %s ul ON (.+)
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
-				)).
+				mock.ExpectQuery(query).
 					WithArgs(1, 404).
 					WillReturnError(sql.ErrNoRows)
 			},
 			input: input{
 				itemID: 1,
-				userID: 1,
+				userID: 404,
 			},
 			want: entity.TimeslotItem{
 				ID:          1,
@@ -354,7 +328,7 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 				End:         timeNow,
 				Done:        true,
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 
@@ -382,6 +356,20 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 	defer dataBase.Close()
 
 	rep := repository.NewTimeslotItemPostgres(dataBase)
+	query := fmt.Sprintf(
+		`
+			UPDATE
+			    %s ti
+			SET
+			    (.+)
+			FROM
+			    %s li,
+			    %s ul
+			WHERE (.+)`,
+		repository.TimeslotsItemsTable,
+		repository.ListsItemsTable,
+		repository.UsersListsTable,
+	)
 
 	type input struct {
 		itemID int
@@ -389,7 +377,6 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 		update entity.UpdateItemInput
 	}
 
-	timeNow := time.Now()
 	newTitle := "New title"
 	newDescription := "New description"
 	newDone := true
@@ -405,20 +392,7 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 		{
 			name: "OK",
 			mockBehavior: func() {
-				mock.ExpectExec(fmt.Sprintf(
-					`
-						UPDATE
-						    %s ti
-						SET
-						    (.+)
-						FROM
-						    %s li,
-						    %s ul
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
-				)).
+				mock.ExpectExec(query).
 					WithArgs(newTitle, newDescription, timeNow, timeNow, newDone, 1, 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
@@ -439,20 +413,7 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 		{
 			name: "OK without done",
 			mockBehavior: func() {
-				mock.ExpectExec(fmt.Sprintf(
-					`
-						UPDATE
-						    %s ti
-						SET
-						    (.+)
-						FROM
-						    %s li,
-						    %s ul
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
-				)).
+				mock.ExpectExec(query).
 					WithArgs(newTitle, newDescription, timeNow, timeNow, 1, 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
@@ -473,20 +434,7 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 		{
 			name: "OK without done and time",
 			mockBehavior: func() {
-				mock.ExpectExec(fmt.Sprintf(
-					`
-						UPDATE
-						    %s ti
-						SET
-						    (.+)
-						FROM
-						    %s li,
-						    %s ul
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
-				)).
+				mock.ExpectExec(query).
 					WithArgs(newTitle, newDescription, 1, 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
@@ -562,6 +510,14 @@ func TestTimeslotItemPostgres_Delete(t *testing.T) {
 	defer dataBase.Close()
 
 	rep := repository.NewTimeslotItemPostgres(dataBase)
+	query := fmt.Sprintf(
+		`
+			DELETE FROM %s ti USING %s li, %s ul
+			WHERE (.+)`,
+		repository.TimeslotsItemsTable,
+		repository.ListsItemsTable,
+		repository.UsersListsTable,
+	)
 
 	type input struct {
 		itemID int
@@ -577,14 +533,7 @@ func TestTimeslotItemPostgres_Delete(t *testing.T) {
 		{
 			name: "OK",
 			mockBehavior: func() {
-				mock.ExpectExec(fmt.Sprintf(
-					`
-						DELETE FROM %s ti USING %s li, %s ul
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
-				)).
+				mock.ExpectExec(query).
 					WithArgs(1, 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
@@ -598,14 +547,7 @@ func TestTimeslotItemPostgres_Delete(t *testing.T) {
 		{
 			name: "Not found",
 			mockBehavior: func() {
-				mock.ExpectExec(fmt.Sprintf(
-					`
-						DELETE FROM %s ti USING %s li, %s ul
-						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
-				)).
+				mock.ExpectExec(query).
 					WithArgs(1, 404).
 					WillReturnError(sql.ErrNoRows)
 			},
