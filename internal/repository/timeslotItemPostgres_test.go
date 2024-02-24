@@ -13,8 +13,6 @@ import (
 	"main.go/internal/repository"
 )
 
-var timeNow = time.Now()
-
 func TestTimeslotItemPostgres_Create(t *testing.T) {
 	dataBase, mock, err := sqlmock.Newx()
 	if err != nil {
@@ -166,6 +164,8 @@ func TestTimeslotItemPostgres_GetAll(t *testing.T) {
 		userID int
 	}
 
+	timeNow := time.Now()
+
 	testTable := []struct {
 		name         string
 		mockBehavior func()
@@ -279,6 +279,8 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 		userID int
 	}
 
+	timeNow := time.Now()
+
 	testTable := []struct {
 		name         string
 		mockBehavior func()
@@ -377,6 +379,7 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 		update entity.UpdateItemInput
 	}
 
+	timeNow := time.Now()
 	newTitle := "New title"
 	newDescription := "New description"
 	newDone := true
