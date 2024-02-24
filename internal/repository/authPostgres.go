@@ -19,8 +19,12 @@ func (r *AuthPostgres) CreateUser(user entity.User) (int, error) {
 	var userID int
 
 	query := fmt.Sprintf(
-		"INSERT INTO %s (name, username, password_hash) values ($1, $2, $3) RETURNING id",
-		usersTable,
+		`
+			INSERT INTO %s (name, username, password_hash)
+			    VALUES ($1, $2, $3)
+			RETURNING
+			    id`,
+		UsersTable,
 	)
 	row := r.db.QueryRow(query, user.Name, user.Username, user.Password)
 
@@ -34,7 +38,14 @@ func (r *AuthPostgres) CreateUser(user entity.User) (int, error) {
 func (r *AuthPostgres) GetUser(username, password string) (entity.User, error) {
 	var user entity.User
 
-	query := fmt.Sprintf(`SELECT id FROM %s WHERE username=$1 AND password_hash=$2`, usersTable)
+	query := fmt.Sprintf(`
+		SELECT
+		    id
+		FROM
+		    %s
+		WHERE
+		    username = $1
+		    AND password_hash = $2`, UsersTable)
 	err := r.db.Get(&user, query, username, password)
 
 	return user, err
