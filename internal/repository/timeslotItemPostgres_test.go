@@ -345,3 +345,81 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 		})
 	}
 }
+
+func TestTimeslotItemPostgres_Update(t *testing.T) {
+	dataBase, mock, err := sqlmock.Newx()
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer dataBase.Close()
+
+	rep := repository.NewTimeslotItemPostgres(dataBase)
+
+	type input struct {
+		itemID int
+		userID int
+		update entity.UpdateItemInput
+	}
+
+	timeNow := time.Now()
+
+	type mockBehavior func()
+
+	update := entity.UpdateItemInput{
+		Title:       func(s string) *string { return &s }("New title"),
+		Description: func(s string) *string { return &s }("New description"),
+		Start:       &timeNow,
+		End:         &timeNow,
+		Done:        func(b bool) *bool { return &b }(true),
+	}
+
+	testTable := []struct {
+		name         string
+		mockBehavior mockBehavior
+		input        input
+		wantErr      bool
+	}{
+		{
+			name: "OK",
+			mockBehavior: func() {
+				mock.ExpectExec(fmt.Sprintf(
+					`
+						UPDATE
+						    %s ti
+						SET
+						    (.+)
+						FROM
+						    %s li,
+						    %s ul
+						WHERE (.+)`,
+					repository.TimeslotsItemsTable,
+					repository.ListsItemsTable,
+					repository.UsersListsTable,
+				)).
+					WithArgs(update.Title, update.Description, update.Start, update.End, update.Done, 1, 1).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+			},
+			input: input{
+				itemID: 1,
+				userID: 1,
+				update: update,
+			},
+
+			wantErr: false,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mockBehavior()
+
+			err1 := rep.Update(testCase.input.userID, testCase.input.itemID, testCase.input.update)
+			if testCase.wantErr {
+				require.Error(t, err1)
+			} else {
+				require.NoError(t, err1)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
