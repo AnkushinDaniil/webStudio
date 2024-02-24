@@ -26,7 +26,11 @@ func (r *TimeslotItemPostgres) Create(listID int, item entity.TimeslotItem) (int
 
 	var itemID int
 	createItemQuery := fmt.Sprintf(
-		`INSERT INTO %s (title, description, beginning, finish) values ($1, $2, $3, $4) RETURNING id`,
+		`
+			INSERT INTO %s (title, description, beginning, finish)
+			    VALUES ($1, $2, $3, $4)
+			RETURNING
+			    id`,
 		timeslotsItemsTable,
 	)
 	row := transaction.QueryRow(createItemQuery, item.Title, item.Description, item.Start, item.End)
@@ -40,7 +44,9 @@ func (r *TimeslotItemPostgres) Create(listID int, item entity.TimeslotItem) (int
 	}
 
 	createListsItemsQuery := fmt.Sprintf(
-		`INSERT INTO %s (list_id, item_id) VALUES ($1, $2)`,
+		`
+			INSERT INTO %s (list_id, item_id)
+			    VALUES ($1, $2)`,
 		listsItemsTable,
 	)
 
@@ -59,9 +65,21 @@ func (r *TimeslotItemPostgres) GetAll(userID, listID int) ([]entity.TimeslotItem
 	var items []entity.TimeslotItem
 
 	query := fmt.Sprintf(
-		`SELECT ti.id, ti.title, ti.description,
-		ti.beginning, ti.finish, ti.done FROM %s ti INNER JOIN %s li on li.item_id = ti.id
-		INNER JOIN %s ul on ul.list_id = li.list_id WHERE li.list_id = $1 AND ul.user_id = $2`,
+		`
+			SELECT
+			    ti.id,
+			    ti.title,
+			    ti.description,
+			    ti.beginning,
+			    ti.finish,
+			    ti.done
+			FROM
+			    %s ti
+			    INNER JOIN %s li ON li.item_id = ti.id
+			    INNER JOIN %s ul ON ul.list_id = li.list_id
+			WHERE
+			    li.list_id = $1
+			    AND ul.user_id = $2`,
 		timeslotsItemsTable,
 		listsItemsTable,
 		usersListsTable,
@@ -78,9 +96,21 @@ func (r *TimeslotItemPostgres) GetByID(userID, itemID int) (entity.TimeslotItem,
 	var item entity.TimeslotItem
 
 	query := fmt.Sprintf(
-		`SELECT ti.id, ti.title, ti.description,
-		ti.beginning, ti.finish, ti.done FROM %s ti INNER JOIN %s li on li.item_id = ti.id
-		INNER JOIN %s ul on ul.list_id = li.list_id WHERE ti.id = $1 AND ul.user_id = $2`,
+		`
+			SELECT
+			    ti.id,
+			    ti.title,
+			    ti.description,
+			    ti.beginning,
+			    ti.finish,
+			    ti.done
+			FROM
+			    %s ti
+			    INNER JOIN %s li ON li.item_id = ti.id
+			    INNER JOIN %s ul ON ul.list_id = li.list_id
+			WHERE
+			    ti.id = $1
+			    AND ul.user_id = $2`,
 		timeslotsItemsTable,
 		listsItemsTable,
 		usersListsTable,
@@ -114,8 +144,19 @@ func (r *TimeslotItemPostgres) Update(userID, itemID int, input entity.UpdateIte
 
 	setQuery := strings.Join(setValues, ", ")
 	query := fmt.Sprintf(
-		`UPDATE %s ti SET %s FROM %s li, %s ul WHERE ti.id = li.item_id AND 
-		li.list_id = ul.list_id AND ul.user_id = $%d AND ti.id = $%d`,
+		`
+			UPDATE
+			    %s ti
+			SET
+			    %s
+			FROM
+			    %s li,
+			    %s ul
+			WHERE
+			    ti.id = li.item_id
+			    AND li.list_id = ul.list_id
+			    AND ul.user_id = $ %d
+			    AND ti.id = $ %d`,
 		timeslotsItemsTable,
 		setQuery,
 		listsItemsTable,
@@ -136,8 +177,13 @@ func (r *TimeslotItemPostgres) Update(userID, itemID int, input entity.UpdateIte
 
 func (r *TimeslotItemPostgres) Delete(userID, itemID int) error {
 	query := fmt.Sprintf(
-		`DELETE FROM %s ti USING %s li , %s ul WHERE ti.id = li.item_id AND ul.user_id = $1 AND 
-		li.list_id = ul.list_id AND ul.user_id = $1 AND ti.id = $2`,
+		`
+			DELETE FROM %s ti USING %s li, %s ul
+			WHERE ti.id = li.item_id
+			    AND ul.user_id = $1
+			    AND li.list_id = ul.list_id
+			    AND ul.user_id = $1
+			    AND ti.id = $2`,
 		timeslotsItemsTable,
 		listsItemsTable,
 		usersListsTable,
