@@ -23,12 +23,12 @@ func TestTimeslotsListPostgres_Create(t *testing.T) {
 	rep := repository.NewTimeslotListPostgres(dataBase)
 	query1 := fmt.Sprintf(
 		`
-			INSERT INTO %s `,
+			INSERT INTO %s`,
 		repository.TimeslotListsTable,
 	)
 	query2 := fmt.Sprintf(
 		`
-			INSERT INTO %s `,
+			INSERT INTO %s`,
 		repository.UsersListsTable,
 	)
 
@@ -152,8 +152,7 @@ func TestTimeslotsListPostgres_GetAll(t *testing.T) {
 			FROM
 			    %s tl
 			    INNER JOIN %s ul ON (.+)
-			WHERE
-			    (.+)`,
+			WHERE (.+)`,
 		repository.TimeslotListsTable,
 		repository.UsersListsTable)
 
@@ -253,8 +252,7 @@ func TestTimeslotsListPostgres_GetById(t *testing.T) {
 			FROM
 			    %s tl
 			    INNER JOIN %s ul ON (.+)
-			WHERE
-			    (.+)`,
+			WHERE (.+)`,
 		repository.TimeslotListsTable,
 		repository.UsersListsTable,
 	)
@@ -343,8 +341,7 @@ func TestTimeslotsListPostgres_Update(t *testing.T) {
 			    (.+)
 			FROM
 			    %s ul
-			WHERE
-			    (.+)`,
+			WHERE (.+)`,
 		repository.TimeslotListsTable,
 		repository.UsersListsTable,
 	)
@@ -425,13 +422,12 @@ func TestTimeslotsListPostgres_Update(t *testing.T) {
 			mockBehavior: func() {
 				mock.ExpectExec(fmt.Sprintf(
 					`
-			UPDATE
-			    %s tl
-			SET
-			FROM
-			    %s ul
-			WHERE
-			    (.+)`,
+						UPDATE
+						    %s tl
+						SET
+						FROM
+						    %s ul
+						WHERE (.+)`,
 					repository.TimeslotListsTable,
 					repository.UsersListsTable,
 				)).

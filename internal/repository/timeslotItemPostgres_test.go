@@ -24,7 +24,7 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 	query1 := `
 		INSERT INTO timeslots_items`
 	query2 := `
-					INSERT INTO lists_items`
+		INSERT INTO lists_items`
 
 	type input struct {
 		listID int
