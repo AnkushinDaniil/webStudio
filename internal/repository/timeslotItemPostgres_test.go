@@ -21,13 +21,17 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 	defer dataBase.Close()
 
 	rep := repository.NewTimeslotItemPostgres(dataBase)
-	query := `
+	query1 := `
 		INSERT INTO timeslots_items`
+	query2 := `
+					INSERT INTO lists_items`
 
 	type input struct {
 		listID int
 		item   entity.TimeslotItem
 	}
+
+	timeNow := time.Now()
 
 	testTable := []struct {
 		name         string
@@ -41,12 +45,11 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 			mockBehavior: func(input input, itemID int) {
 				mock.ExpectBegin()
 				rows := sqlmock.NewRows([]string{"id"}).AddRow(itemID)
-				mock.ExpectQuery(query).
+				mock.ExpectQuery(query1).
 					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
 					WillReturnRows(rows)
 
-				mock.ExpectExec(`
-					INSERT INTO lists_items`).
+				mock.ExpectExec(query2).
 					WithArgs(input.listID, itemID).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -57,8 +60,8 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 					ID:          0,
 					Title:       "test title",
 					Description: "test description",
-					Start:       time.Now(),
-					End:         time.Now(),
+					Start:       timeNow,
+					End:         timeNow,
 					Done:        false,
 				},
 			},
@@ -72,7 +75,7 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"id"}).
 					AddRow(itemID).
 					RowError(0, errors.New("some error"))
-				mock.ExpectQuery(query).
+				mock.ExpectQuery(query1).
 					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
 					WillReturnRows(rows)
 
@@ -83,8 +86,8 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 					ID:          0,
 					Title:       "",
 					Description: "test description",
-					Start:       time.Now(),
-					End:         time.Now(),
+					Start:       timeNow,
+					End:         timeNow,
 					Done:        false,
 				},
 			},
@@ -96,12 +99,11 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 			mockBehavior: func(input input, itemID int) {
 				mock.ExpectBegin()
 				rows := sqlmock.NewRows([]string{"id"}).AddRow(itemID)
-				mock.ExpectQuery(query).
+				mock.ExpectQuery(query1).
 					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
 					WillReturnRows(rows)
 
-				mock.ExpectExec(`
-					INSERT INTO lists_items`).
+				mock.ExpectExec(query2).
 					WithArgs(input.listID, itemID).
 					WillReturnError(errors.New("some error"))
 
@@ -112,8 +114,8 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 					ID:          0,
 					Title:       "test title",
 					Description: "test description",
-					Start:       time.Now(),
-					End:         time.Now(),
+					Start:       timeNow,
+					End:         timeNow,
 					Done:        false,
 				},
 			},
