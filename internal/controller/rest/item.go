@@ -45,7 +45,7 @@ func (h *TimeslotItemHandler) createItem(ctx *gin.Context) {
 		return
 	}
 
-	listID, err := strconv.Atoi(ctx.Param("listID"))
+	listID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
 		return
@@ -92,7 +92,7 @@ func (h *TimeslotItemHandler) getAllItems(ctx *gin.Context) {
 		return
 	}
 
-	listID, err := strconv.Atoi(ctx.Param("listID"))
+	listID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid list id parameter")
 		return
@@ -126,7 +126,7 @@ func (h *TimeslotItemHandler) getItemByID(ctx *gin.Context) {
 		return
 	}
 
-	itemID, err := strconv.Atoi(ctx.Param("itemID"))
+	itemID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid item id parameter")
 		return
@@ -159,7 +159,7 @@ func (h *TimeslotItemHandler) updateItem(ctx *gin.Context) {
 		return
 	}
 
-	itemID, err := strconv.Atoi(ctx.Param("itemID"))
+	itemID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
 		return
@@ -198,7 +198,7 @@ func (h *TimeslotItemHandler) deleteItem(ctx *gin.Context) {
 		return
 	}
 
-	itemID, err := strconv.Atoi(ctx.Param("itemID"))
+	itemID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid item id parameter")
 		return
