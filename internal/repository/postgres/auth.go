@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"fmt"
@@ -7,15 +7,20 @@ import (
 	"main.go/internal/entity"
 )
 
-type AuthPostgres struct {
+type Authorization interface {
+	CreateUser(user entity.User) (int, error)
+	GetUser(username, password string) (entity.User, error)
+}
+
+type AuthorizationPostgres struct {
 	db *sqlx.DB
 }
 
-func NewAuthPostgres(db *sqlx.DB) *AuthPostgres {
-	return &AuthPostgres{db: db}
+func NewAuthorizationPostgres(db *sqlx.DB) *AuthorizationPostgres {
+	return &AuthorizationPostgres{db: db}
 }
 
-func (r *AuthPostgres) CreateUser(user entity.User) (int, error) {
+func (r *AuthorizationPostgres) CreateUser(user entity.User) (int, error) {
 	var userID int
 
 	query := fmt.Sprintf(
@@ -35,7 +40,7 @@ func (r *AuthPostgres) CreateUser(user entity.User) (int, error) {
 	return userID, nil
 }
 
-func (r *AuthPostgres) GetUser(username, password string) (entity.User, error) {
+func (r *AuthorizationPostgres) GetUser(username, password string) (entity.User, error) {
 	var user entity.User
 
 	query := fmt.Sprintf(`

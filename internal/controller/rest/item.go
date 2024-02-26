@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"net/http"
@@ -7,6 +7,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"main.go/internal/entity"
 )
+
+//go:generate mockgen -source=item.go -destination=mocks/itemMock.go
+type TimeslotItemService interface {
+	Create(userID, listID int, input entity.TimeslotItem) (int, error)
+	GetAll(userID, listID int) ([]entity.TimeslotItem, error)
+	GetByID(userID, itemID int) (entity.TimeslotItem, error)
+	Delete(userID, itemID int) error
+	Update(userID, itemID int, input entity.UpdateItemInput) error
+}
+
+type TimeslotItemHandler struct {
+	service TimeslotItemService
+}
+
+func NewTimeslotItemHandler(service TimeslotItemService) *TimeslotItemHandler {
+	return &TimeslotItemHandler{service: service}
+}
 
 // @Summary Create timeslot item
 // @Security ApiKeyAuth
@@ -20,15 +37,15 @@ import (
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/items [post]
-func (h *Handler) createItem(ctx *gin.Context) {
+// @Router /api/items [post].
+func (h *TimeslotItemHandler) createItem(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	listID, err := strconv.Atoi(ctx.Param("id"))
+	listID, err := strconv.Atoi(ctx.Param("listID"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
 		return
@@ -41,7 +58,7 @@ func (h *Handler) createItem(ctx *gin.Context) {
 		return
 	}
 
-	itemID, err := h.services.TimeslotItem.Create(userID, listID, input)
+	itemID, err := h.service.Create(userID, listID, input)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -67,21 +84,21 @@ type getAllItemsResponse struct {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/items [get]
-func (h *Handler) getAllItems(ctx *gin.Context) {
+// @Router /api/items [get].
+func (h *TimeslotItemHandler) getAllItems(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	listID, err := strconv.Atoi(ctx.Param("id"))
+	listID, err := strconv.Atoi(ctx.Param("listID"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid list id parameter")
 		return
 	}
 
-	items, err := h.services.TimeslotItem.GetAll(userID, listID)
+	items, err := h.service.GetAll(userID, listID)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -101,21 +118,21 @@ func (h *Handler) getAllItems(ctx *gin.Context) {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/items/:id [get]
-func (h *Handler) getItemByID(ctx *gin.Context) {
+// @Router /api/items/:id [get].
+func (h *TimeslotItemHandler) getItemByID(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	itemID, err := strconv.Atoi(ctx.Param("id"))
+	itemID, err := strconv.Atoi(ctx.Param("itemID"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid item id parameter")
 		return
 	}
 
-	item, err := h.services.TimeslotItem.GetByID(userID, itemID)
+	item, err := h.service.GetByID(userID, itemID)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -135,14 +152,14 @@ func (h *Handler) getItemByID(ctx *gin.Context) {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/items/:id [put]
-func (h *Handler) updateItem(ctx *gin.Context) {
+// @Router /api/items/:id [put].
+func (h *TimeslotItemHandler) updateItem(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		return
 	}
 
-	itemID, err := strconv.Atoi(ctx.Param("id"))
+	itemID, err := strconv.Atoi(ctx.Param("itemID"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid id parameter")
 		return
@@ -154,7 +171,7 @@ func (h *Handler) updateItem(ctx *gin.Context) {
 		return
 	}
 
-	if err = h.services.TimeslotItem.Update(userID, itemID, input); err != nil {
+	if err = h.service.Update(userID, itemID, input); err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -173,21 +190,21 @@ func (h *Handler) updateItem(ctx *gin.Context) {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/items/:id [delete]
-func (h *Handler) deleteItem(ctx *gin.Context) {
+// @Router /api/items/:id [delete].
+func (h *TimeslotItemHandler) deleteItem(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	itemID, err := strconv.Atoi(ctx.Param("id"))
+	itemID, err := strconv.Atoi(ctx.Param("itemID"))
 	if err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, "invalid item id parameter")
 		return
 	}
 
-	err = h.services.TimeslotItem.Delete(userID, itemID)
+	err = h.service.Delete(userID, itemID)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return

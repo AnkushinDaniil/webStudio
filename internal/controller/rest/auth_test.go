@@ -1,4 +1,4 @@
-package handler
+package rest //nolint:testpackage // need to use handler.signUp.
 
 import (
 	"bytes"
@@ -10,14 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/magiconair/properties/assert"
 	"go.uber.org/mock/gomock"
+	mock_service "main.go/internal/controller/rest/mocks"
 	"main.go/internal/entity"
 	"main.go/internal/service"
-	mock_service "main.go/internal/service/mocks"
 )
 
 func TestHandler_signUp(t *testing.T) {
 	// Init Test Table
-	type mockBehavior func(r *mock_service.MockAuthorization, user entity.User)
+	type mockBehavior func(r *mock_service.MockAuthorizationService, user entity.User)
 
 	testTable := []struct {
 		name                 string
@@ -31,21 +31,27 @@ func TestHandler_signUp(t *testing.T) {
 			name:      "Ok",
 			inputBody: `{"username": "username", "name": "Test Name", "password": "qwerty"}`,
 			inputUser: entity.User{
+				ID:       0,
 				Username: "username",
 				Name:     "Test Name",
 				Password: "qwerty",
 			},
-			mockBehavior: func(r *mock_service.MockAuthorization, user entity.User) {
+			mockBehavior: func(r *mock_service.MockAuthorizationService, user entity.User) {
 				r.EXPECT().CreateUser(user).Return(1, nil)
 			},
 			expectedStatusCode:   200,
 			expectedResponseBody: `{"id":1}`,
 		},
 		{
-			name:                 "Wrong Input",
-			inputBody:            `{"username": "username"}`,
-			inputUser:            entity.User{},
-			mockBehavior:         func(r *mock_service.MockAuthorization, user entity.User) {},
+			name:      "Wrong Input",
+			inputBody: `{"username": "username"}`,
+			inputUser: entity.User{
+				ID:       0,
+				Name:     "",
+				Username: "",
+				Password: "",
+			},
+			mockBehavior:         func(_ *mock_service.MockAuthorizationService, _ entity.User) {},
 			expectedStatusCode:   400,
 			expectedResponseBody: `{"message":"invalid input body"}`,
 		},
@@ -53,11 +59,12 @@ func TestHandler_signUp(t *testing.T) {
 			name:      "Service Error",
 			inputBody: `{"username": "username", "name": "Test Name", "password": "qwerty"}`,
 			inputUser: entity.User{
+				ID:       0,
 				Username: "username",
 				Name:     "Test Name",
 				Password: "qwerty",
 			},
-			mockBehavior: func(r *mock_service.MockAuthorization, user entity.User) {
+			mockBehavior: func(r *mock_service.MockAuthorizationService, user entity.User) {
 				r.EXPECT().CreateUser(user).Return(0, errors.New("something went wrong"))
 			},
 			expectedStatusCode:   500,
@@ -71,11 +78,15 @@ func TestHandler_signUp(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
 
-			auth := mock_service.NewMockAuthorization(mockCtrl)
+			auth := mock_service.NewMockAuthorizationService(mockCtrl)
 			testCase.mockBehavior(auth, testCase.inputUser)
 
-			services := &service.Service{Authorization: auth}
-			handler := Handler{services}
+			services := &service.Service{
+				Authorization: auth,
+				TimeslotList:  nil,
+				TimeslotItem:  nil,
+			}
+			handler := NewHandlers(services)
 
 			// Init Endpoint
 			engine := gin.New()

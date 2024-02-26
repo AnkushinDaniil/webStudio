@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"net/http"
@@ -6,6 +6,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"main.go/internal/entity"
 )
+
+//go:generate mockgen -source=auth.go -destination=mocks/authMock.go
+type AuthorizationService interface {
+	CreateUser(user entity.User) (int, error)
+	GenerateToken(username, password string) (string, error)
+	ParseToken(token string) (int, error)
+}
+
+type AuthorizationHandler struct {
+	service AuthorizationService
+}
+
+func NewAuthorizationHandler(service AuthorizationService) *AuthorizationHandler {
+	return &AuthorizationHandler{service: service}
+}
 
 // @Summary SignUp
 // @Tags auth
@@ -18,8 +33,8 @@ import (
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /auth/sign-up [post]
-func (h *Handler) signUp(ctx *gin.Context) {
+// @Router /auth/sign-up [post].
+func (h *AuthorizationHandler) signUp(ctx *gin.Context) {
 	var input entity.User
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -27,7 +42,7 @@ func (h *Handler) signUp(ctx *gin.Context) {
 		return
 	}
 
-	userID, err := h.services.Authorization.CreateUser(input)
+	userID, err := h.service.CreateUser(input)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -54,8 +69,8 @@ type sighInInput struct {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /auth/sign-in [post]
-func (h *Handler) signIn(ctx *gin.Context) {
+// @Router /auth/sign-in [post].
+func (h *AuthorizationHandler) signIn(ctx *gin.Context) {
 	var input sighInInput
 
 	if err := ctx.BindJSON(&input); err != nil {
@@ -63,7 +78,7 @@ func (h *Handler) signIn(ctx *gin.Context) {
 		return
 	}
 
-	token, err := h.services.Authorization.GenerateToken(input.Username, input.Password)
+	token, err := h.service.GenerateToken(input.Username, input.Password)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}

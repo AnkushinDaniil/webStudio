@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"net/http"
@@ -7,6 +7,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"main.go/internal/entity"
 )
+
+//go:generate mockgen -source=list.go -destination=mocks/listMock.go
+type TimeslotListService interface {
+	Create(userID int, list entity.TimeslotsList) (int, error)
+	GetAll(userID int) ([]entity.TimeslotsList, error)
+	GetByID(userID, listID int) (entity.TimeslotsList, error)
+	Delete(userID, listID int) error
+	Update(userID, listID int, input entity.UpdateListInput) error
+}
+
+type TimeslotListHandler struct {
+	service TimeslotListService
+}
+
+func NewTimeslotListHandler(service TimeslotListService) *TimeslotListHandler {
+	return &TimeslotListHandler{service: service}
+}
 
 // @Summary Create timeslot list
 // @Security ApiKeyAuth
@@ -20,8 +37,8 @@ import (
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/lists [post]
-func (h *Handler) createList(ctx *gin.Context) {
+// @Router /api/lists [post].
+func (h *TimeslotListHandler) createList(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
@@ -34,7 +51,7 @@ func (h *Handler) createList(ctx *gin.Context) {
 		return
 	}
 
-	listID, err := h.services.TimeslotList.Create(userID, input)
+	listID, err := h.service.Create(userID, input)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -60,15 +77,15 @@ type getAllListsResponse struct {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/lists [get]
-func (h *Handler) getAllLists(ctx *gin.Context) {
+// @Router /api/lists [get].
+func (h *TimeslotListHandler) getAllLists(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
 		return
 	}
 
-	lists, err := h.services.TimeslotList.GetAll(userID)
+	lists, err := h.service.GetAll(userID)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -88,8 +105,8 @@ func (h *Handler) getAllLists(ctx *gin.Context) {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/lists/:id [get]
-func (h *Handler) getListByID(ctx *gin.Context) {
+// @Router /api/lists/:id [get].
+func (h *TimeslotListHandler) getListByID(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
@@ -102,7 +119,7 @@ func (h *Handler) getListByID(ctx *gin.Context) {
 		return
 	}
 
-	list, err := h.services.TimeslotList.GetByID(userID, listID)
+	list, err := h.service.GetByID(userID, listID)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
@@ -122,8 +139,8 @@ func (h *Handler) getListByID(ctx *gin.Context) {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/lists/:id [put]
-func (h *Handler) updateList(ctx *gin.Context) {
+// @Router /api/lists/:id [put].
+func (h *TimeslotListHandler) updateList(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		return
@@ -141,7 +158,7 @@ func (h *Handler) updateList(ctx *gin.Context) {
 		return
 	}
 
-	if err = h.services.TimeslotList.Update(userID, listID, input); err != nil {
+	if err = h.service.Update(userID, listID, input); err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -160,8 +177,8 @@ func (h *Handler) updateList(ctx *gin.Context) {
 // @Failure 400,404 {object} errorResponse
 // @Failure 500 {object} errorResponse
 // @Failure default {object} errorResponse
-// @Router /api/lists/:id [delete]
-func (h *Handler) deleteList(ctx *gin.Context) {
+// @Router /api/lists/:id [delete].
+func (h *TimeslotListHandler) deleteList(ctx *gin.Context) {
 	userID, err := getUserID(ctx)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
@@ -174,7 +191,7 @@ func (h *Handler) deleteList(ctx *gin.Context) {
 		return
 	}
 
-	err = h.services.TimeslotList.Delete(userID, listID)
+	err = h.service.Delete(userID, listID)
 	if err != nil {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return

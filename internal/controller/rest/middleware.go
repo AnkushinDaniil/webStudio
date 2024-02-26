@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ const (
 	userCtx             = "userID"
 )
 
-func (h *Handler) userIdentity(ctx *gin.Context) {
+func (h *Handlers) userIdentity(ctx *gin.Context) {
 	header := ctx.GetHeader(authorizationHeader)
 	if header == "" {
 		newErrorResponse(ctx, http.StatusUnauthorized, "empty authorization header")
@@ -30,8 +30,7 @@ func (h *Handler) userIdentity(ctx *gin.Context) {
 		newErrorResponse(ctx, http.StatusUnauthorized, "token is empty")
 		return
 	}
-
-	userID, err := h.services.Authorization.ParseToken(headerParts[1])
+	userID, err := h.AuthorizationHandler.service.ParseToken(headerParts[1])
 	if err != nil {
 		newErrorResponse(ctx, http.StatusUnauthorized, err.Error())
 	}

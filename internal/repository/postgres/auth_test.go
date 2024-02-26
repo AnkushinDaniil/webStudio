@@ -1,4 +1,4 @@
-package repository_test
+package postgres_test
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	sqlmock "github.com/zhashkevych/go-sqlxmock"
 	"main.go/internal/entity"
 	"main.go/internal/repository"
+	"main.go/internal/repository/postgres"
 )
 
 func TestAuthPostgres_CreateUser(t *testing.T) {
@@ -18,11 +19,11 @@ func TestAuthPostgres_CreateUser(t *testing.T) {
 	}
 	defer dataBase.Close()
 
-	rep := repository.NewAuthPostgres(dataBase)
-	query := fmt.Sprintf(
+	rep := repository.NewRepository(dataBase)
+	query := fmt.Sprintf( //nolint:perfsprint // general style for queries
 		`
 			INSERT INTO %s`,
-		repository.UsersTable,
+		postgres.UsersTable,
 	)
 
 	type input struct {
@@ -101,13 +102,13 @@ func TestAuthPostgres_GetUser(t *testing.T) {
 	}
 	defer dataBase.Close()
 
-	rep := repository.NewAuthPostgres(dataBase)
+	rep := repository.NewRepository(dataBase)
 	query := fmt.Sprintf(`
 		SELECT
 		    (.+)
 		FROM
 		    %s
-		WHERE (.+)`, repository.UsersTable)
+		WHERE (.+)`, postgres.UsersTable)
 	user := entity.User{
 		ID:       1,
 		Name:     "name1",

@@ -10,19 +10,24 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func NewServer() *Server {
-	return &Server{}
+func NewServer(
+	port string,
+	handler http.Handler,
+	maxHeaderBytes int,
+	readTimeout, writeTimeout time.Duration,
+) *Server {
+	return &Server{
+		httpServer: &http.Server{
+			Addr:           ":" + port,
+			Handler:        handler,
+			MaxHeaderBytes: maxHeaderBytes,
+			ReadTimeout:    readTimeout,
+			WriteTimeout:   writeTimeout,
+		},
+	}
 }
 
-func (s *Server) Run(port string, handler http.Handler) error {
-	s.httpServer = &http.Server{
-		Addr:           ":" + port,
-		Handler:        handler,
-		MaxHeaderBytes: 1 << 20, // 1 Mb
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-	}
-
+func (s *Server) Run() error {
 	return s.httpServer.ListenAndServe()
 }
 

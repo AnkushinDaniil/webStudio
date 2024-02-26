@@ -8,8 +8,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/sha3"
 	"main.go/internal/entity"
-	"main.go/internal/repository"
 )
+
+type AuthorizationRepository interface {
+	CreateUser(user entity.User) (int, error)
+	GetUser(username, password string) (entity.User, error)
+}
 
 const (
 	salt       = "57ct480 (T^&(6 n79TG789)"
@@ -22,37 +26,77 @@ type tokenClaims struct {
 	UserID int `json:"user_id"`
 }
 
-type AuthService struct {
-	repo repository.Authorization
+type AuthorizationService struct {
+	repo AuthorizationRepository
 }
 
-func NewAuthService(repo repository.Authorization) *AuthService {
-	return &AuthService{repo: repo}
+func NewAuthorizationService(repo AuthorizationRepository) *AuthorizationService {
+	return &AuthorizationService{repo: repo}
 }
 
-func (s *AuthService) CreateUser(user entity.User) (int, error) {
+func (s *AuthorizationService) CreateUser(user entity.User) (int, error) {
 	user.Password = generatePasswordHash(user.Password)
 	return s.repo.CreateUser(user)
 }
 
-func (s *AuthService) GenerateToken(username, password string) (string, error) {
+func (s *AuthorizationService) GenerateToken(username, password string) (string, error) {
 	user, err := s.repo.GetUser(username, generatePasswordHash(password))
 	if err != nil {
 		return "", err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{jwt.RegisteredClaims{
-		ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(tokenTTL)},
-		IssuedAt:  &jwt.NumericDate{Time: time.Now()},
-	}, user.ID})
+	token := func() *jwt.Token {
+		var (
+			method jwt.SigningMethod = jwt.SigningMethodHS256
+			claims jwt.Claims        = &tokenClaims{
+				jwt.RegisteredClaims{
+					Issuer:    "",
+					Subject:   "",
+					Audience:  []string{},
+					ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(tokenTTL)},
+					NotBefore: &jwt.NumericDate{
+						Time: time.Time{},
+					},
+					IssuedAt: &jwt.NumericDate{Time: time.Now()},
+					ID:       "",
+				},
+				user.ID,
+			}
+		)
+		return &jwt.Token{
+			Raw:       "",
+			Method:    method,
+			Header:    map[string]interface{}{"typ": "JWT", "alg": method.Alg()},
+			Claims:    claims,
+			Signature: []byte{},
+			Valid:     false,
+		}
+	}()
 
 	return token.SignedString([]byte(sighingKey))
 }
 
-func (s *AuthService) ParseToken(accessToken string) (int, error) {
+func (s *AuthorizationService) ParseToken(accessToken string) (int, error) {
 	token, err := jwt.ParseWithClaims(
 		accessToken,
-		&tokenClaims{},
+		&tokenClaims{
+			RegisteredClaims: jwt.RegisteredClaims{
+				Issuer:   "",
+				Subject:  "",
+				Audience: []string{},
+				ExpiresAt: &jwt.NumericDate{
+					Time: time.Time{},
+				},
+				NotBefore: &jwt.NumericDate{
+					Time: time.Time{},
+				},
+				IssuedAt: &jwt.NumericDate{
+					Time: time.Time{},
+				},
+				ID: "",
+			},
+			UserID: 0,
+		},
 		func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("invalid signing method")

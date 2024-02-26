@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/jmoiron/sqlx"
 	"main.go/internal/entity"
+	"main.go/internal/repository/postgres"
 )
 
 type Authorization interface {
@@ -34,8 +35,8 @@ type Repository struct {
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
-		Authorization: NewAuthPostgres(db),
-		TimeslotList:  NewTimeslotListPostgres(db),
-		TimeslotItem:  NewTimeslotItemPostgres(db),
+		Authorization: postgres.NewAuthorizationPostgres(db),
+		TimeslotList:  postgres.NewTimeslotListPostgres(db),
+		TimeslotItem:  postgres.NewTimeslotItemPostgres(db),
 	}
 }

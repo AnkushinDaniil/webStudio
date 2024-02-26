@@ -37,7 +37,7 @@ type Service struct {
 
 func NewService(repo *repository.Repository) *Service {
 	return &Service{
-		Authorization: NewAuthService(repo.Authorization),
+		Authorization: NewAuthorizationService(repo.Authorization),
 		TimeslotList:  NewTimeslotListService(repo.TimeslotList),
 		TimeslotItem:  NewTimeslotItemService(repo.TimeslotItem, repo.TimeslotList),
 	}

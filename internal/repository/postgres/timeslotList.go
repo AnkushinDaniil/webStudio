@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"fmt"
@@ -8,6 +8,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"main.go/internal/entity"
 )
+
+type TimeslotList interface {
+	Create(userID int, list entity.TimeslotsList) (int, error)
+	GetAll(userID int) ([]entity.TimeslotsList, error)
+	GetByID(userID, listID int) (entity.TimeslotsList, error)
+	Delete(userID, listID int) error
+	Update(userID, listID int, input entity.UpdateListInput) error
+}
 
 type TimeslotListPostgres struct {
 	db *sqlx.DB

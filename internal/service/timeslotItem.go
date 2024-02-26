@@ -4,17 +4,24 @@ import (
 	"net/http"
 
 	"main.go/internal/entity"
-	"main.go/internal/repository"
 )
 
+type TimeslotItemRepository interface {
+	Create(listID int, item entity.TimeslotItem) (int, error)
+	GetAll(userID, listID int) ([]entity.TimeslotItem, error)
+	GetByID(userID, itemID int) (entity.TimeslotItem, error)
+	Delete(userID, itemID int) error
+	Update(userID, itemID int, input entity.UpdateItemInput) error
+}
+
 type TimeslotItemService struct {
-	itemRepo repository.TimeslotItem
-	listRepo repository.TimeslotList
+	itemRepo TimeslotItemRepository
+	listRepo TimeslotListRepository
 }
 
 func NewTimeslotItemService(
-	itemRepo repository.TimeslotItem,
-	listRepo repository.TimeslotList,
+	itemRepo TimeslotItemRepository,
+	listRepo TimeslotListRepository,
 ) *TimeslotItemService {
 	return &TimeslotItemService{listRepo: listRepo, itemRepo: itemRepo}
 }

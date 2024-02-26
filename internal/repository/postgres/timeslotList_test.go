@@ -1,37 +1,42 @@
-package repository_test
+package postgres_test
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	sqlmock "github.com/zhashkevych/go-sqlxmock"
 	"main.go/internal/entity"
 	"main.go/internal/repository"
+	"main.go/internal/repository/postgres"
 )
 
-func TestTimeslotItemPostgres_Create(t *testing.T) {
+func TestTimeslotsListPostgres_Create(t *testing.T) {
 	dataBase, mock, err := sqlmock.Newx()
 	if err != nil {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
+
 	defer dataBase.Close()
 
-	rep := repository.NewTimeslotItemPostgres(dataBase)
-	query1 := `
-		INSERT INTO timeslots_items`
-	query2 := `
-		INSERT INTO lists_items`
+	rep := repository.NewRepository(dataBase)
+	query1 := fmt.Sprintf( //nolint:perfsprint // general style for queries
+		`
+			INSERT INTO %s`,
+		postgres.TimeslotListsTable,
+	)
+	query2 := fmt.Sprintf( //nolint:perfsprint // general style for queries
+		`
+			INSERT INTO %s`,
+		postgres.UsersListsTable,
+	)
 
 	type input struct {
-		listID int
-		item   entity.TimeslotItem
+		userID int
+		list   entity.TimeslotsList
 	}
-
-	timeNow := time.Now()
 
 	testTable := []struct {
 		name         string
@@ -42,53 +47,49 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 	}{
 		{
 			name: "OK",
-			mockBehavior: func(input input, itemID int) {
+			mockBehavior: func(input input, listID int) {
 				mock.ExpectBegin()
-				rows := sqlmock.NewRows([]string{"id"}).AddRow(itemID)
+				rows := sqlmock.NewRows([]string{"id"}).AddRow(listID)
 				mock.ExpectQuery(query1).
-					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
+					WithArgs(input.list.Title, input.list.Description).
 					WillReturnRows(rows)
 
 				mock.ExpectExec(query2).
-					WithArgs(input.listID, itemID).
+					WithArgs(1, 1).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 
 				mock.ExpectCommit()
 			},
 			input: input{
-				listID: 1, item: entity.TimeslotItem{
+				userID: 1,
+				list: entity.TimeslotsList{
 					ID:          0,
 					Title:       "test title",
 					Description: "test description",
-					Start:       timeNow,
-					End:         timeNow,
-					Done:        false,
 				},
 			},
-			want:    2,
+			want:    1,
 			wantErr: false,
 		},
 		{
 			name: "Empty Fields",
-			mockBehavior: func(input input, itemID int) {
+			mockBehavior: func(input input, listID int) {
 				mock.ExpectBegin()
 				rows := sqlmock.NewRows([]string{"id"}).
-					AddRow(itemID).
+					AddRow(listID).
 					RowError(0, errors.New("some error"))
 				mock.ExpectQuery(query1).
-					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
+					WithArgs(input.list.Title, input.list.Description).
 					WillReturnRows(rows)
 
 				mock.ExpectRollback()
 			},
 			input: input{
-				listID: 1, item: entity.TimeslotItem{
+				userID: 1,
+				list: entity.TimeslotsList{
 					ID:          0,
 					Title:       "",
 					Description: "test description",
-					Start:       timeNow,
-					End:         timeNow,
-					Done:        false,
 				},
 			},
 			want:    0,
@@ -96,27 +97,24 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 		},
 		{
 			name: "2nd insert error",
-			mockBehavior: func(input input, itemID int) {
+			mockBehavior: func(input input, listID int) {
 				mock.ExpectBegin()
-				rows := sqlmock.NewRows([]string{"id"}).AddRow(itemID)
+				rows := sqlmock.NewRows([]string{"id"}).AddRow(listID)
 				mock.ExpectQuery(query1).
-					WithArgs(input.item.Title, input.item.Description, input.item.Start, input.item.End).
+					WithArgs(input.list.Title, input.list.Description).
 					WillReturnRows(rows)
 
 				mock.ExpectExec(query2).
-					WithArgs(input.listID, itemID).
+					WithArgs(input.userID, listID).
 					WillReturnError(errors.New("some error"))
 
 				mock.ExpectRollback()
 			},
 			input: input{
-				listID: 1, item: entity.TimeslotItem{
+				userID: 1, list: entity.TimeslotsList{
 					ID:          0,
 					Title:       "test title",
 					Description: "test description",
-					Start:       timeNow,
-					End:         timeNow,
-					Done:        false,
 				},
 			},
 			want:    0,
@@ -128,7 +126,7 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			testCase.mockBehavior(testCase.input, testCase.want)
 
-			got, err1 := rep.Create(testCase.input.listID, testCase.input.item)
+			got, err1 := rep.TimeslotList.Create(testCase.input.userID, testCase.input.list)
 			if testCase.wantErr {
 				require.Error(t, err1)
 			} else {
@@ -140,81 +138,68 @@ func TestTimeslotItemPostgres_Create(t *testing.T) {
 	}
 }
 
-func TestTimeslotItemPostgres_GetAll(t *testing.T) {
+func TestTimeslotsListPostgres_GetAll(t *testing.T) {
 	dataBase, mock, err := sqlmock.Newx()
 	if err != nil {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer dataBase.Close()
 
-	rep := repository.NewTimeslotItemPostgres(dataBase)
+	rep := repository.NewRepository(dataBase)
 	query := fmt.Sprintf(
 		`
 			SELECT
 			    (.+)
 			FROM
-			    %s ti
-			    INNER JOIN %s li ON (.+)
+			    %s tl
 			    INNER JOIN %s ul ON (.+)
 			WHERE (.+)`,
-		repository.TimeslotsItemsTable,
-		repository.ListsItemsTable,
-		repository.UsersListsTable)
+		postgres.TimeslotListsTable,
+		postgres.UsersListsTable)
 
 	type input struct {
 		listID int
 		userID int
 	}
 
-	timeNow := time.Now()
-
 	testTable := []struct {
 		name         string
 		mockBehavior func()
 		input        input
-		want         []entity.TimeslotItem
+		want         []entity.TimeslotsList
 		wantErr      bool
 	}{
 		{
 			name: "OK",
 			mockBehavior: func() {
-				rows := sqlmock.NewRows([]string{"id", "title", "description", "beginning", "finish", "done"}).
-					AddRow(1, "title1", "description1", timeNow, timeNow, true).
-					AddRow(2, "title2", "description2", timeNow, timeNow, false).
-					AddRow(3, "title3", "description3", timeNow, timeNow, false)
+				rows := sqlmock.NewRows([]string{"id", "title", "description"}).
+					AddRow(1, "title1", "description1").
+					AddRow(2, "title2", "description2").
+					AddRow(3, "title3", "description3")
 
 				mock.ExpectQuery(query).
-					WithArgs(1, 1).
+					WithArgs(1).
 					WillReturnRows(rows)
 			},
 			input: input{
 				listID: 1, userID: 1,
 			},
 
-			want: []entity.TimeslotItem{
+			want: []entity.TimeslotsList{
 				{
 					ID:          1,
 					Title:       "title1",
 					Description: "description1",
-					Start:       timeNow,
-					End:         timeNow,
-					Done:        true,
 				},
 				{
 					ID:          2,
 					Title:       "title2",
 					Description: "description2",
-					Start:       timeNow,
-					End:         timeNow,
-					Done:        false,
 				},
 				{
 					ID:          3,
 					Title:       "title3",
 					Description: "description3",
-					Start:       timeNow,
-					End:         timeNow,
-					Done:        false,
 				},
 			},
 			wantErr: false,
@@ -223,15 +208,14 @@ func TestTimeslotItemPostgres_GetAll(t *testing.T) {
 			name: "No Records",
 			mockBehavior: func() {
 				rows := sqlmock.NewRows(
-					[]string{"id", "title", "description", "beginning", "finish", "done"},
+					[]string{"id", "title", "description"},
 				)
 				mock.ExpectQuery(query).
-					WithArgs(1, 1).
+					WithArgs(1).
 					WillReturnRows(rows)
 			},
 			input: input{
-				listID: 1,
-				userID: 1,
+				listID: 1, userID: 1,
 			},
 			want:    nil,
 			wantErr: false,
@@ -242,7 +226,7 @@ func TestTimeslotItemPostgres_GetAll(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			testCase.mockBehavior()
 
-			got, err1 := rep.GetAll(testCase.input.userID, testCase.input.listID)
+			got, err1 := rep.TimeslotList.GetAll(testCase.input.userID)
 			if testCase.wantErr {
 				require.Error(t, err1)
 			} else {
@@ -254,62 +238,55 @@ func TestTimeslotItemPostgres_GetAll(t *testing.T) {
 	}
 }
 
-func TestTimeslotItemPostgres_GetById(t *testing.T) {
+func TestTimeslotsListPostgres_GetById(t *testing.T) {
 	dataBase, mock, err := sqlmock.Newx()
 	if err != nil {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer dataBase.Close()
 
-	rep := repository.NewTimeslotItemPostgres(dataBase)
+	rep := repository.NewRepository(dataBase)
 	query := fmt.Sprintf(
 		`
 			SELECT
 			    (.+)
 			FROM
-			    %s ti
-			    INNER JOIN %s li ON (.+)
+			    %s tl
 			    INNER JOIN %s ul ON (.+)
 			WHERE (.+)`,
-		repository.TimeslotsItemsTable,
-		repository.ListsItemsTable,
-		repository.UsersListsTable,
+		postgres.TimeslotListsTable,
+		postgres.UsersListsTable,
 	)
 
 	type input struct {
-		itemID int
+		listID int
 		userID int
 	}
-
-	timeNow := time.Now()
 
 	testTable := []struct {
 		name         string
 		mockBehavior func()
 		input        input
-		want         entity.TimeslotItem
+		want         entity.TimeslotsList
 		wantErr      bool
 	}{
 		{
 			name: "OK",
 			mockBehavior: func() {
-				rows := sqlmock.NewRows([]string{"id", "title", "description", "beginning", "finish", "done"}).
-					AddRow(1, "title1", "description1", timeNow, timeNow, true)
+				rows := sqlmock.NewRows([]string{"id", "title", "description"}).
+					AddRow(1, "title1", "description1")
 				mock.ExpectQuery(query).
 					WithArgs(1, 1).
 					WillReturnRows(rows)
 			},
 			input: input{
-				itemID: 1,
+				listID: 1,
 				userID: 1,
 			},
-			want: entity.TimeslotItem{
+			want: entity.TimeslotsList{
 				ID:          1,
 				Title:       "title1",
 				Description: "description1",
-				Start:       timeNow,
-				End:         timeNow,
-				Done:        true,
 			},
 			wantErr: false,
 		},
@@ -317,20 +294,17 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 			name: "NotFound",
 			mockBehavior: func() {
 				mock.ExpectQuery(query).
-					WithArgs(1, 404).
+					WithArgs(404, 1).
 					WillReturnError(sql.ErrNoRows)
 			},
 			input: input{
-				itemID: 1,
+				listID: 1,
 				userID: 404,
 			},
-			want: entity.TimeslotItem{
-				ID:          1,
-				Title:       "title1",
-				Description: "description1",
-				Start:       timeNow,
-				End:         timeNow,
-				Done:        true,
+			want: entity.TimeslotsList{
+				ID:          0,
+				Title:       "",
+				Description: "",
 			},
 			wantErr: true,
 		},
@@ -340,7 +314,7 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			testCase.mockBehavior()
 
-			got, err1 := rep.GetByID(testCase.input.userID, testCase.input.itemID)
+			got, err1 := rep.TimeslotList.GetByID(testCase.input.userID, testCase.input.listID)
 			if testCase.wantErr {
 				require.Error(t, err1)
 			} else {
@@ -352,39 +326,35 @@ func TestTimeslotItemPostgres_GetById(t *testing.T) {
 	}
 }
 
-func TestTimeslotItemPostgres_Update(t *testing.T) {
+func TestTimeslotsListPostgres_Update(t *testing.T) {
 	dataBase, mock, err := sqlmock.Newx()
 	if err != nil {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer dataBase.Close()
 
-	rep := repository.NewTimeslotItemPostgres(dataBase)
+	rep := repository.NewRepository(dataBase)
 	query := fmt.Sprintf(
 		`
 			UPDATE
-			    %s ti
+			    %s tl
 			SET
 			    (.+)
 			FROM
-			    %s li,
 			    %s ul
 			WHERE (.+)`,
-		repository.TimeslotsItemsTable,
-		repository.ListsItemsTable,
-		repository.UsersListsTable,
+		postgres.TimeslotListsTable,
+		postgres.UsersListsTable,
 	)
 
 	type input struct {
-		itemID int
+		listID int
 		userID int
-		update entity.UpdateItemInput
+		update entity.UpdateListInput
 	}
 
-	timeNow := time.Now()
 	newTitle := "New title"
 	newDescription := "New description"
-	newDone := true
 
 	type mockBehavior func()
 
@@ -398,18 +368,15 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 			name: "OK",
 			mockBehavior: func() {
 				mock.ExpectExec(query).
-					WithArgs(newTitle, newDescription, timeNow, timeNow, newDone, 1, 1).
+					WithArgs(newTitle, newDescription, 1, 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			input: input{
-				itemID: 1,
+				listID: 1,
 				userID: 1,
-				update: entity.UpdateItemInput{
+				update: entity.UpdateListInput{
 					Title:       &newTitle,
 					Description: &newDescription,
-					Start:       &timeNow,
-					End:         &timeNow,
-					Done:        &newDone,
 				},
 			},
 
@@ -419,18 +386,15 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 			name: "OK without done",
 			mockBehavior: func() {
 				mock.ExpectExec(query).
-					WithArgs(newTitle, newDescription, timeNow, timeNow, 1, 1).
+					WithArgs(newTitle, newDescription, 1, 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			input: input{
-				itemID: 1,
+				listID: 1,
 				userID: 1,
-				update: entity.UpdateItemInput{
+				update: entity.UpdateListInput{
 					Title:       &newTitle,
 					Description: &newDescription,
-					Start:       &timeNow,
-					End:         &timeNow,
-					Done:        nil,
 				},
 			},
 
@@ -444,14 +408,11 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			input: input{
-				itemID: 1,
+				listID: 1,
 				userID: 1,
-				update: entity.UpdateItemInput{
+				update: entity.UpdateListInput{
 					Title:       &newTitle,
 					Description: &newDescription,
-					Start:       nil,
-					End:         nil,
-					Done:        nil,
 				},
 			},
 
@@ -463,28 +424,23 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 				mock.ExpectExec(fmt.Sprintf(
 					`
 						UPDATE
-						    %s ti
+						    %s tl
 						SET
 						FROM
-						    %s li,
 						    %s ul
 						WHERE (.+)`,
-					repository.TimeslotsItemsTable,
-					repository.ListsItemsTable,
-					repository.UsersListsTable,
+					postgres.TimeslotListsTable,
+					postgres.UsersListsTable,
 				)).
 					WithArgs(1, 1).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			input: input{
-				itemID: 1,
+				listID: 1,
 				userID: 1,
-				update: entity.UpdateItemInput{
+				update: entity.UpdateListInput{
 					Title:       nil,
 					Description: nil,
-					Start:       nil,
-					End:         nil,
-					Done:        nil,
 				},
 			},
 
@@ -496,7 +452,11 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			testCase.mockBehavior()
 
-			err1 := rep.Update(testCase.input.userID, testCase.input.itemID, testCase.input.update)
+			err1 := rep.TimeslotList.Update(
+				testCase.input.userID,
+				testCase.input.listID,
+				testCase.input.update,
+			)
 			if testCase.wantErr {
 				require.Error(t, err1)
 			} else {
@@ -507,25 +467,24 @@ func TestTimeslotItemPostgres_Update(t *testing.T) {
 	}
 }
 
-func TestTimeslotItemPostgres_Delete(t *testing.T) {
+func TestTimeslotsListPostgres_Delete(t *testing.T) {
 	dataBase, mock, err := sqlmock.Newx()
 	if err != nil {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer dataBase.Close()
 
-	rep := repository.NewTimeslotItemPostgres(dataBase)
+	rep := repository.NewRepository(dataBase)
 	query := fmt.Sprintf(
 		`
-			DELETE FROM %s ti USING %s li, %s ul
+			DELETE FROM %s tl USING %s ul
 			WHERE (.+)`,
-		repository.TimeslotsItemsTable,
-		repository.ListsItemsTable,
-		repository.UsersListsTable,
+		postgres.TimeslotListsTable,
+		postgres.UsersListsTable,
 	)
 
 	type input struct {
-		itemID int
+		listID int
 		userID int
 	}
 
@@ -543,7 +502,7 @@ func TestTimeslotItemPostgres_Delete(t *testing.T) {
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			},
 			input: input{
-				itemID: 1,
+				listID: 1,
 				userID: 1,
 			},
 
@@ -557,7 +516,7 @@ func TestTimeslotItemPostgres_Delete(t *testing.T) {
 					WillReturnError(sql.ErrNoRows)
 			},
 			input: input{
-				itemID: 404,
+				listID: 404,
 				userID: 1,
 			},
 
@@ -569,7 +528,7 @@ func TestTimeslotItemPostgres_Delete(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			testCase.mockBehavior()
 
-			err1 := rep.Delete(testCase.input.userID, testCase.input.itemID)
+			err1 := rep.TimeslotList.Delete(testCase.input.userID, testCase.input.listID)
 			if testCase.wantErr {
 				require.Error(t, err1)
 			} else {

@@ -2,14 +2,22 @@ package service
 
 import (
 	"main.go/internal/entity"
-	"main.go/internal/repository"
+	"main.go/internal/repository/postgres"
 )
 
-type TimeslotListService struct {
-	repo repository.TimeslotList
+type TimeslotListRepository interface {
+	Create(userID int, list entity.TimeslotsList) (int, error)
+	GetAll(userID int) ([]entity.TimeslotsList, error)
+	GetByID(userID, listID int) (entity.TimeslotsList, error)
+	Delete(userID, listID int) error
+	Update(userID, listID int, input entity.UpdateListInput) error
 }
 
-func NewTimeslotListService(repo repository.TimeslotList) *TimeslotListService {
+type TimeslotListService struct {
+	repo TimeslotListRepository
+}
+
+func NewTimeslotListService(repo postgres.TimeslotList) *TimeslotListService {
 	return &TimeslotListService{repo: repo}
 }
 

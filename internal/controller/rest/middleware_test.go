@@ -1,4 +1,4 @@
-package handler
+package rest //nolint:testpackage // need to use handler.userIdentity.
 
 import (
 	"errors"
@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/magiconair/properties/assert"
 	"go.uber.org/mock/gomock"
+	mock_service "main.go/internal/controller/rest/mocks"
 	"main.go/internal/service"
-	mock_service "main.go/internal/service/mocks"
 )
 
 func TestHandler_userIdentity(t *testing.T) {
-	type mockBehavior func(s *mock_service.MockAuthorization, token string)
+	type mockBehavior func(s *mock_service.MockAuthorizationService, token string)
 
 	testTable := []struct {
 		name                 string
@@ -31,16 +31,19 @@ func TestHandler_userIdentity(t *testing.T) {
 			headerName:  "Authorization",
 			headerValue: "Bearer token",
 			token:       "token",
-			mockBehavior: func(s *mock_service.MockAuthorization, token string) {
+			mockBehavior: func(s *mock_service.MockAuthorizationService, token string) {
 				s.EXPECT().ParseToken(token).Return(1, nil)
 			},
 			expectedStatusCode:   200,
 			expectedResponseBody: "1",
 		},
 		{
-			name:                 "Invalid header name",
-			headerName:           "",
-			mockBehavior:         func(_ *mock_service.MockAuthorization, _ string) {},
+			name:        "Invalid header name",
+			headerName:  "",
+			headerValue: "",
+			token:       "",
+			mockBehavior: func(_ *mock_service.MockAuthorizationService, _ string) {
+			},
 			expectedStatusCode:   401,
 			expectedResponseBody: `{"message":"empty authorization header"}`,
 		},
@@ -49,7 +52,7 @@ func TestHandler_userIdentity(t *testing.T) {
 			headerName:           "",
 			headerValue:          "Beerer token",
 			token:                "token",
-			mockBehavior:         func(_ *mock_service.MockAuthorization, _ string) {},
+			mockBehavior:         func(_ *mock_service.MockAuthorizationService, _ string) {},
 			expectedStatusCode:   401,
 			expectedResponseBody: `{"message":"empty authorization header"}`,
 		},
@@ -58,7 +61,7 @@ func TestHandler_userIdentity(t *testing.T) {
 			headerName:           "Authorization",
 			headerValue:          "Beerer token",
 			token:                "token",
-			mockBehavior:         func(_ *mock_service.MockAuthorization, _ string) {},
+			mockBehavior:         func(_ *mock_service.MockAuthorizationService, _ string) {},
 			expectedStatusCode:   401,
 			expectedResponseBody: `{"message":"invalid authorization header"}`,
 		},
@@ -67,7 +70,7 @@ func TestHandler_userIdentity(t *testing.T) {
 			headerName:           "Authorization",
 			headerValue:          "Bearer ",
 			token:                "token",
-			mockBehavior:         func(_ *mock_service.MockAuthorization, _ string) {},
+			mockBehavior:         func(_ *mock_service.MockAuthorizationService, _ string) {},
 			expectedStatusCode:   401,
 			expectedResponseBody: `{"message":"token is empty"}`,
 		},
@@ -76,7 +79,7 @@ func TestHandler_userIdentity(t *testing.T) {
 			headerName:           "Authorization",
 			headerValue:          "Bearer ",
 			token:                "token",
-			mockBehavior:         func(_ *mock_service.MockAuthorization, _ string) {},
+			mockBehavior:         func(_ *mock_service.MockAuthorizationService, _ string) {},
 			expectedStatusCode:   401,
 			expectedResponseBody: `{"message":"token is empty"}`,
 		},
@@ -85,7 +88,7 @@ func TestHandler_userIdentity(t *testing.T) {
 			headerName:  "Authorization",
 			headerValue: "Bearer token",
 			token:       "token",
-			mockBehavior: func(s *mock_service.MockAuthorization, token string) {
+			mockBehavior: func(s *mock_service.MockAuthorizationService, token string) {
 				s.EXPECT().ParseToken(token).Return(0, errors.New("invalid token"))
 			},
 			expectedStatusCode:   401,
@@ -99,11 +102,15 @@ func TestHandler_userIdentity(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			auth := mock_service.NewMockAuthorization(ctrl)
+			auth := mock_service.NewMockAuthorizationService(ctrl)
 			testCase.mockBehavior(auth, testCase.token)
 
-			services := &service.Service{Authorization: auth}
-			handler := NewHandler(services)
+			services := &service.Service{
+				Authorization: auth,
+				TimeslotList:  nil,
+				TimeslotItem:  nil,
+			}
+			handler := NewHandlers(services)
 
 			// Test server
 			engine := gin.New()
@@ -114,7 +121,7 @@ func TestHandler_userIdentity(t *testing.T) {
 
 			// Test request
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest("POST", "/protected", nil)
+			request := httptest.NewRequest(http.MethodPost, "/protected", nil)
 			request.Header.Set(testCase.headerName, testCase.headerValue)
 
 			// Make request
