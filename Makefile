@@ -1,7 +1,7 @@
 build:
 	docker-compose build timeslot-app
 
-run:
+run: 
 	docker-compose up timeslot-app
 
 test:
