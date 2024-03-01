@@ -83,5 +83,8 @@ func (h *AuthorizationHandler) signIn(ctx *gin.Context) {
 		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 	}
 
-	ctx.JSON(http.StatusOK, map[string]interface{}{"token": token})
+	ctx.JSON(http.StatusOK, map[string]interface{}{
+		"token":    token,
+		"username": input.Username,
+	})
 }
