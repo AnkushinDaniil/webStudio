@@ -27,6 +27,21 @@ type TimeslotItem struct {
 	Done        bool      `json:"done"        db:"done"`
 }
 
+type TimeslotItemWithUsername struct {
+	ID          int       `json:"id"          db:"id"`
+	Title       string    `json:"title"       db:"title"       binding:"required"`
+	Description string    `json:"description" db:"description"`
+	Start       time.Time `json:"start"       db:"beginning"   binding:"required"`
+	End         time.Time `json:"end"         db:"finish"      binding:"required"`
+	Done        bool      `json:"done"        db:"done"`
+	Username    string    `json:"username" db:"username"      binding:"required"`
+}
+
+type ItemsByRange struct {
+	Start time.Time `json:"start"       db:"beginning"   binding:"required"`
+	End   time.Time `json:"end"         db:"finish"      binding:"required"`
+}
+
 type ListsItem struct {
 	ID     int
 	ListID int

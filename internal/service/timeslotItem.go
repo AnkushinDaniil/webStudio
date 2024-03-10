@@ -12,6 +12,7 @@ type TimeslotItemRepository interface {
 	GetByID(userID, itemID int) (entity.TimeslotItem, error)
 	Delete(userID, itemID int) error
 	Update(userID, itemID int, input entity.UpdateItemInput) error
+	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error)
 }
 
 type TimeslotItemService struct {
@@ -52,4 +53,8 @@ func (s *TimeslotItemService) Update(userID, itemID int, input entity.UpdateItem
 	}
 
 	return s.itemRepo.Update(userID, itemID, input)
+}
+
+func (s *TimeslotItemService) GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error) {
+	return s.itemRepo.GetByRange(input)
 }

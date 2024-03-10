@@ -15,6 +15,7 @@ type TimeslotItemService interface {
 	GetByID(userID, itemID int) (entity.TimeslotItem, error)
 	Delete(userID, itemID int) error
 	Update(userID, itemID int, input entity.UpdateItemInput) error
+	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error)
 }
 
 type TimeslotItemHandler struct {
@@ -139,6 +140,45 @@ func (h *TimeslotItemHandler) getItemByID(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, item)
+}
+
+type getItemsByRangeResponse struct {
+	Data []entity.TimeslotItemWithUsername `json:"data"`
+}
+
+// @Summary Get Item By Id
+// @Security ApiKeyAuth
+// @Tags items
+// @Description get item by id
+// @ID get-item-by-id
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} entity.TimeslotItem
+// @Failure 400,404 {object} errorResponse
+// @Failure 500 {object} errorResponse
+// @Failure default {object} errorResponse
+// @Router /api/items/:id [get].
+func (h *TimeslotItemHandler) getItemsByRange(ctx *gin.Context) {
+	_, err := getUserID(ctx)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, "user userID not found")
+		return
+	}
+
+	var input entity.ItemsByRange
+
+	if err = ctx.BindJSON(&input); err != nil {
+		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	items, err := h.service.GetByRange(input)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, getItemsByRangeResponse{Data: items})
 }
 
 // @Summary Update Item

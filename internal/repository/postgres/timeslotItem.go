@@ -200,3 +200,41 @@ func (r *TimeslotItemPostgres) Delete(userID, itemID int) error {
 
 	return err
 }
+
+func (r *TimeslotItemPostgres) GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error) {
+	var items []entity.TimeslotItemWithUsername
+
+	query := fmt.Sprintf(
+		`
+			SELECT
+			    ti.id,
+			    ti.title,
+			    ti.description,
+			    ti.beginning,
+			    ti.finish,
+			    ti.done,
+			    u.username
+			FROM
+			    %s ti
+			    INNER JOIN %s li ON li.item_id = ti.id
+			    INNER JOIN %s ul ON ul.list_id = li.list_id
+				INNER JOIN %s u ON u.id = ul.user_id
+			WHERE
+			    ti.beginning >= $1
+			    AND ti.finish <= $2`,
+		TimeslotsItemsTable,
+		ListsItemsTable,
+		UsersListsTable,
+		UsersTable,
+	)
+
+	if err := r.db.Select(&items,
+		query,
+		input.Start,
+		input.End,
+	); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
