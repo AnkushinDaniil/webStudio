@@ -167,7 +167,7 @@ func (h *TimeslotItemHandler) getItemsByRange(ctx *gin.Context) {
 
 	var input entity.ItemsByRange
 
-	if err = ctx.BindJSON(&input); err != nil {
+	if err = ctx.ShouldBind(&input); err != nil {
 		newErrorResponse(ctx, http.StatusBadRequest, err.Error())
 		return
 	}

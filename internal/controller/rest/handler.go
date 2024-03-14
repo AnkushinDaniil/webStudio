@@ -57,10 +57,7 @@ func (h *Handlers) InitRoutes() *gin.Engine {
 			items.PUT("/:id", h.TimeslotItemHandler.updateItem)
 			items.DELETE("/:id", h.TimeslotItemHandler.deleteItem)
 		}
-		schedule := api.Group("/schedule")
-		{
-			schedule.POST("/", h.TimeslotItemHandler.getItemsByRange)
-		}
+		api.GET("/schedule", h.TimeslotItemHandler.getItemsByRange)
 	}
 
 	return router

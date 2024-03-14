@@ -34,12 +34,12 @@ type TimeslotItemWithUsername struct {
 	Start       time.Time `json:"start"       db:"beginning"   binding:"required"`
 	End         time.Time `json:"end"         db:"finish"      binding:"required"`
 	Done        bool      `json:"done"        db:"done"`
-	Username    string    `json:"username" db:"username"      binding:"required"`
+	Username    string    `json:"username"    db:"username"    binding:"required"`
 }
 
 type ItemsByRange struct {
-	Start time.Time `json:"start"       db:"beginning"   binding:"required"`
-	End   time.Time `json:"end"         db:"finish"      binding:"required"`
+	Start time.Time `form:"start"`
+	End   time.Time `form:"end"`
 }
 
 type ListsItem struct {
