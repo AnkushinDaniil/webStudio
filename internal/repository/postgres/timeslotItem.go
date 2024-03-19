@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	"main.go/internal/entity"
 )
 
@@ -173,8 +172,8 @@ func (r *TimeslotItemPostgres) Update(userID, itemID int, input entity.UpdateIte
 			WHERE
 			    ti.id = li.item_id
 			    AND li.list_id = ul.list_id
-			    AND ul.user_id = $ %d
-			    AND ti.id = $ %d`,
+			    AND ul.user_id = $%d
+			    AND ti.id = $%d`,
 		TimeslotsItemsTable,
 		setQuery,
 		ListsItemsTable,
@@ -184,9 +183,6 @@ func (r *TimeslotItemPostgres) Update(userID, itemID int, input entity.UpdateIte
 	)
 
 	args = append(args, userID, itemID)
-
-	logrus.Debugf("updateQuery: %s \n", query)
-	logrus.Debugf("args: %s \n", args...)
 
 	_, err := r.db.Exec(query, args...)
 
