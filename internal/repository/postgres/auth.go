@@ -25,13 +25,13 @@ func (r *AuthorizationPostgres) CreateUser(user entity.User) (int, error) {
 
 	query := fmt.Sprintf(
 		`
-			INSERT INTO %s (name, username, password_hash)
-			    VALUES ($1, $2, $3)
+			INSERT INTO %s (name, color, username, password_hash)
+			    VALUES ($1, $2, $3, $4)
 			RETURNING
 			    id`,
 		UsersTable,
 	)
-	row := r.db.QueryRow(query, user.Name, user.Username, user.Password)
+	row := r.db.QueryRow(query, user.Name, user.Color, user.Username, user.Password)
 
 	if err := row.Scan(&userID); err != nil {
 		return 0, err

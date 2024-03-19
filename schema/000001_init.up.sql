@@ -2,6 +2,7 @@ create table users
 (
     id            serial       not null unique,
     name          varchar(255) not null,
+    color         varchar(6)   not null unique,
     username      varchar(255) not null unique,
     password_hash varchar(255) not null
 );

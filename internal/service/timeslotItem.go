@@ -12,7 +12,7 @@ type TimeslotItemRepository interface {
 	GetByID(userID, itemID int) (entity.TimeslotItem, error)
 	Delete(userID, itemID int) error
 	Update(userID, itemID int, input entity.UpdateItemInput) error
-	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error)
+	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItem, error)
 }
 
 type TimeslotItemService struct {
@@ -35,7 +35,9 @@ func (s *TimeslotItemService) Create(userID, listID int, item entity.TimeslotIte
 	return s.itemRepo.Create(listID, item)
 }
 
-func (s *TimeslotItemService) GetAll(userID, listID int) ([]entity.TimeslotItem, error) {
+func (s *TimeslotItemService) GetAll(
+	userID, listID int,
+) ([]entity.TimeslotItem, error) {
 	return s.itemRepo.GetAll(userID, listID)
 }
 
@@ -55,6 +57,8 @@ func (s *TimeslotItemService) Update(userID, itemID int, input entity.UpdateItem
 	return s.itemRepo.Update(userID, itemID, input)
 }
 
-func (s *TimeslotItemService) GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error) {
+func (s *TimeslotItemService) GetByRange(
+	input entity.ItemsByRange,
+) ([]entity.TimeslotItem, error) {
 	return s.itemRepo.GetByRange(input)
 }

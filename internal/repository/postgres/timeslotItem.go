@@ -69,7 +69,9 @@ func (r *TimeslotItemPostgres) Create(listID int, item entity.TimeslotItem) (int
 	return itemID, transaction.Commit()
 }
 
-func (r *TimeslotItemPostgres) GetAll(userID, listID int) ([]entity.TimeslotItem, error) {
+func (r *TimeslotItemPostgres) GetAll(
+	userID, listID int,
+) ([]entity.TimeslotItem, error) {
 	var items []entity.TimeslotItem
 
 	query := fmt.Sprintf(
@@ -80,17 +82,20 @@ func (r *TimeslotItemPostgres) GetAll(userID, listID int) ([]entity.TimeslotItem
 			    ti.description,
 			    ti.beginning,
 			    ti.finish,
-			    ti.done
+			    ti.done,
+				u.username
 			FROM
 			    %s ti
 			    INNER JOIN %s li ON li.item_id = ti.id
 			    INNER JOIN %s ul ON ul.list_id = li.list_id
+				INNER JOIN %s u ON u.id = ul.user_id
 			WHERE
 			    li.list_id = $1
 			    AND ul.user_id = $2`,
 		TimeslotsItemsTable,
 		ListsItemsTable,
 		UsersListsTable,
+		UsersTable,
 	)
 
 	if err := r.db.Select(&items, query, listID, userID); err != nil {
@@ -100,7 +105,9 @@ func (r *TimeslotItemPostgres) GetAll(userID, listID int) ([]entity.TimeslotItem
 	return items, nil
 }
 
-func (r *TimeslotItemPostgres) GetByID(userID, itemID int) (entity.TimeslotItem, error) {
+func (r *TimeslotItemPostgres) GetByID(
+	userID, itemID int,
+) (entity.TimeslotItem, error) {
 	var item entity.TimeslotItem
 
 	query := fmt.Sprintf(
@@ -111,17 +118,20 @@ func (r *TimeslotItemPostgres) GetByID(userID, itemID int) (entity.TimeslotItem,
 			    ti.description,
 			    ti.beginning,
 			    ti.finish,
-			    ti.done
+			    ti.done,
+				u.username
 			FROM
 			    %s ti
 			    INNER JOIN %s li ON li.item_id = ti.id
 			    INNER JOIN %s ul ON ul.list_id = li.list_id
+				INNER JOIN %s u ON u.id = ul.user_id
 			WHERE
 			    ti.id = $1
 			    AND ul.user_id = $2`,
 		TimeslotsItemsTable,
 		ListsItemsTable,
 		UsersListsTable,
+		UsersTable,
 	)
 	if err := r.db.Get(&item, query, itemID, userID); err != nil {
 		return item, err
@@ -201,8 +211,10 @@ func (r *TimeslotItemPostgres) Delete(userID, itemID int) error {
 	return err
 }
 
-func (r *TimeslotItemPostgres) GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error) {
-	var items []entity.TimeslotItemWithUsername
+func (r *TimeslotItemPostgres) GetByRange(
+	input entity.ItemsByRange,
+) ([]entity.TimeslotItem, error) {
+	var items []entity.TimeslotItem
 
 	query := fmt.Sprintf(
 		`
@@ -213,7 +225,8 @@ func (r *TimeslotItemPostgres) GetByRange(input entity.ItemsByRange) ([]entity.T
 			    ti.beginning,
 			    ti.finish,
 			    ti.done,
-			    u.username
+			    u.username,
+				u.color
 			FROM
 			    %s ti
 			    INNER JOIN %s li ON li.item_id = ti.id

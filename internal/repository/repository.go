@@ -25,7 +25,7 @@ type TimeslotItem interface {
 	GetByID(userID, itemID int) (entity.TimeslotItem, error)
 	Delete(userID, itemID int) error
 	Update(userID, itemID int, input entity.UpdateItemInput) error
-	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error)
+	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItem, error)
 }
 
 type Repository struct {

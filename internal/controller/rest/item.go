@@ -15,7 +15,7 @@ type TimeslotItemService interface {
 	GetByID(userID, itemID int) (entity.TimeslotItem, error)
 	Delete(userID, itemID int) error
 	Update(userID, itemID int, input entity.UpdateItemInput) error
-	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItemWithUsername, error)
+	GetByRange(input entity.ItemsByRange) ([]entity.TimeslotItem, error)
 }
 
 type TimeslotItemHandler struct {
@@ -143,7 +143,7 @@ func (h *TimeslotItemHandler) getItemByID(ctx *gin.Context) {
 }
 
 type getItemsByRangeResponse struct {
-	Data []entity.TimeslotItemWithUsername `json:"data"`
+	Data []entity.TimeslotItem `json:"data"`
 }
 
 // @Summary Get Item By Id
