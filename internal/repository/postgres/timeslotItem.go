@@ -118,7 +118,8 @@ func (r *TimeslotItemPostgres) GetByID(
 			    ti.beginning,
 			    ti.finish,
 			    ti.done,
-				u.username
+				u.username,
+				u.color
 			FROM
 			    %s ti
 			    INNER JOIN %s li ON li.item_id = ti.id
