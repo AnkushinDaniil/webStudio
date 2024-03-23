@@ -65,8 +65,15 @@ func (h *TimeslotItemHandler) createItem(ctx *gin.Context) {
 		return
 	}
 
+	item, err := h.service.GetByID(userID, itemID)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	ctx.JSON(http.StatusOK, map[string]interface{}{
-		"id": itemID,
+		"id":    itemID,
+		"color": item.Color,
 	})
 }
 
