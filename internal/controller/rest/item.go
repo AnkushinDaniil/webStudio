@@ -223,7 +223,13 @@ func (h *TimeslotItemHandler) updateItem(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, statusResponse{"ok"})
+	item, err := h.service.GetByID(userID, itemID)
+	if err != nil {
+		newErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, item)
 }
 
 // @Summary Delete Item
